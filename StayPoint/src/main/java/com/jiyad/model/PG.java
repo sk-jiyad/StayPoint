@@ -43,7 +43,10 @@ public class PG {
     
     @Column(nullable = false)
     private Boolean acAvailable;
-    
+
+    @Column(nullable = false)
+    private Long ownerUserId;
+
     // Constructors, getters, and setters
     public PG() {}
     
@@ -141,7 +144,15 @@ public class PG {
 	public void setAcAvailable(Boolean acAvailable) {
 		this.acAvailable = acAvailable;
 	}
-    
+
+	public Long getOwnerUserId() {
+		return ownerUserId;
+	}
+
+	public void setOwnerUserId(Long ownerUserId) {
+		this.ownerUserId = ownerUserId;
+	}
+
     // Continue with all other getters and setters...
     
 }

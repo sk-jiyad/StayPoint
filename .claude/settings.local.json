@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./mvnw -q compile)",
+      "Bash(./mvnw compile *)",
+      "Bash(./mvnw clean *)",
+      "Bash(./mvnw spring-boot:run)",
+      "PowerShell(Get-NetTCPConnection *)",
+      "Bash(./mvnw test *)"
+    ]
+  }
+}
