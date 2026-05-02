@@ -2,7 +2,6 @@ package com.jiyad.model;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.util.List;
 
 @Entity
 @Table(name = "pgs")
@@ -153,7 +152,7 @@ public class PG {
 		this.ownerUserId = ownerUserId;
 	}
 
-    // Continue with all other getters and setters...
+
     
 }
 

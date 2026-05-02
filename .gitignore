@@ -1,13 +1,3 @@
-# Ignore environment files
-.env
-
-# Ignore log files
-*.log
-
-# Ignore system files
-.DS_Store
-Thumbs.db
-
 # Ignore IDE-specific folders
 .vscode/
 .idea/
@@ -21,15 +11,12 @@ node_modules/
 *.pyc
 *.exe
 *.out
+*.jar
+*.log
 
 # Ignore backup files
 *.bak
 *.tmp
-
-# Java
-*.class
-*.jar
-*.log
 
 # Maven
 target/
@@ -38,6 +25,10 @@ target/
 .idea/
 *.iml
 .vscode/
+.metadata/
+.settings/
+.project
+.classpath
 
 # OS
 .DS_Store
