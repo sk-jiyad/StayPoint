@@ -5,10 +5,12 @@ import com.jiyad.dto.LoginRequestDTO;
 import com.jiyad.dto.RegisterRequestDTO;
 import com.jiyad.model.User;
 import com.jiyad.repository.UserRepository;
+import com.jiyad.security.AuthUserPrincipal;
 import com.jiyad.security.JwtUtil;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,27 +37,32 @@ public class AuthService {
         if (userRepository.existsByEmail(dto.getEmail())) {
             throw new IllegalArgumentException("Email already registered");
         }
+        // Intentional simplification: clients self-select ROLE_USER vs ROLE_OWNER so the
+        // demo can exercise both paths. Production would gate OWNER on email verification
+        // or admin approval. See README "Design Decisions".
         User user = new User(
-            dto.getEmail(),
-            passwordEncoder.encode(dto.getPassword()),
-            dto.getRole());
+                dto.getEmail(),
+                passwordEncoder.encode(dto.getPassword()),
+                dto.getRole());
         user = userRepository.save(user);
 
-        String token = jwtUtil.generateToken(user);
+        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole());
         return new AuthResponseDTO(token, user.getId(), user.getEmail(), user.getRole());
     }
 
     public AuthResponseDTO login(LoginRequestDTO dto) {
+        Authentication auth;
         try {
-            authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getPassword()));
+            auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getPassword()));
         } catch (AuthenticationException ex) {
             throw new BadCredentialsException("Invalid email or password");
         }
-        User user = userRepository.findByEmail(dto.getEmail())
-            .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
+        AuthUserPrincipal principal = (AuthUserPrincipal) auth.getPrincipal();
 
-        String token = jwtUtil.generateToken(user);
-        return new AuthResponseDTO(token, user.getId(), user.getEmail(), user.getRole());
+        String token = jwtUtil.generateToken(
+                principal.getId(), principal.getUsername(), principal.getRole());
+        return new AuthResponseDTO(
+                token, principal.getId(), principal.getUsername(), principal.getRole());
     }
 }

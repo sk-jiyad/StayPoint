@@ -23,6 +23,13 @@ public class AuthUserPrincipal implements UserDetails {
         this.role = user.getRole();
     }
 
+    public AuthUserPrincipal(Long id, String email, Role role) {
+        this.id = id;
+        this.email = email;
+        this.passwordHash = null;
+        this.role = role;
+    }
+
     public Long getId() { return id; }
     public Role getRole() { return role; }
 

@@ -1,5 +1,7 @@
 package com.jiyad.security;
 
+import com.jiyad.model.Role;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,11 +25,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private static final String PREFIX = "Bearer ";
 
     private final JwtUtil jwtUtil;
-    private final CustomUserDetailsService userDetailsService;
 
-    public JwtAuthFilter(JwtUtil jwtUtil, CustomUserDetailsService userDetailsService) {
+    public JwtAuthFilter(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
-        this.userDetailsService = userDetailsService;
     }
 
     @Override
@@ -36,16 +36,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain chain) throws ServletException, IOException {
         String header = request.getHeader(HEADER);
         if (header != null && header.startsWith(PREFIX)
-            && SecurityContextHolder.getContext().getAuthentication() == null) {
+                && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             String token = header.substring(PREFIX.length());
             try {
-                Long userId = jwtUtil.extractUserId(token);
-                AuthUserPrincipal principal = userDetailsService.loadByUserId(userId);
+                Claims c = jwtUtil.parse(token);
+                AuthUserPrincipal principal = new AuthUserPrincipal(
+                        Long.valueOf(c.getSubject()),
+                        c.get("email", String.class),
+                        Role.valueOf(c.get("role", String.class)));
 
                 UsernamePasswordAuthenticationToken auth =
-                    new UsernamePasswordAuthenticationToken(
-                        principal, null, principal.getAuthorities());
+                        new UsernamePasswordAuthenticationToken(
+                                principal, null, principal.getAuthorities());
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);
             } catch (JwtException | IllegalArgumentException ex) {
