@@ -16,9 +16,6 @@ public interface PGRepository extends JpaRepository<PG, Long> {
     
     // Find PGs within rent range
     @Query("SELECT p FROM PG p WHERE p.rentSingle BETWEEN :minRent AND :maxRent")
-    List<PG> findByRentRange(@Param("minRent") BigDecimal minRent, 
+    List<PG> findByRentRange(@Param("minRent") BigDecimal minRent,
                            @Param("maxRent") BigDecimal maxRent);
-    
-    // Find PGs with specific amenities
-    List<PG> findByFoodProvidedAndWifiAvailable(Boolean foodProvided, Boolean wifiAvailable);
 }

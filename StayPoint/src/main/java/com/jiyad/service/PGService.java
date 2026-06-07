@@ -8,11 +8,13 @@ import com.jiyad.repository.PGRepository;
 import com.jiyad.security.AuthUtils;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@Transactional(readOnly = true)
 public class PGService {
 
     private final PGRepository pgRepository;
@@ -29,6 +31,7 @@ public class PGService {
         return pgRepository.findById(id);
     }
 
+    @Transactional
     public PG createPG(PGCreateDTO dto) {
         PG pg = new PG();
         pg.setName(dto.getName());
@@ -47,6 +50,7 @@ public class PGService {
         return pgRepository.save(pg);
     }
 
+    @Transactional
     public PG updatePG(Long id, PGUpdateDTO dto) {
         PG pg = pgRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("PG not found with id " + id));
@@ -70,6 +74,7 @@ public class PGService {
         return pgRepository.save(pg);
     }
 
+    @Transactional
     public void deletePG(Long id) {
         PG pg = pgRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("PG not found with id " + id));

@@ -14,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
@@ -33,6 +34,7 @@ public class AuthService {
         this.jwtUtil = jwtUtil;
     }
 
+    @Transactional
     public AuthResponseDTO register(RegisterRequestDTO dto) {
         if (userRepository.existsByEmail(dto.getEmail())) {
             throw new IllegalArgumentException("Email already registered");
