@@ -22,9 +22,6 @@ node_modules/
 target/
 
 # IDEs
-.idea/
-*.iml
-.vscode/
 .metadata/
 .settings/
 .project

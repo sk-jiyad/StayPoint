@@ -1,6 +1,7 @@
 package com.jiyad.model;
 
 import jakarta.persistence.*;
+
 import java.math.BigDecimal;
 
 @Entity
@@ -9,37 +10,37 @@ public class PG {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(nullable = false)
     private String name;
-    
+
     @Column(nullable = false)
     private String ownerName;
-    
+
     @Column(nullable = false)
     private String contactNumber;
-    
+
     private String alternateContact;
-    
+
     @Column(nullable = false, columnDefinition = "TEXT")
     private String address;
-    
+
     private String landmark;
-    
+
     @Column(nullable = false)
     private BigDecimal rentSingle;
-    
+
     @Column(nullable = false)
     private BigDecimal rentDouble;
-    
+
     private BigDecimal rentTriple;
-    
+
     @Column(nullable = false)
     private Boolean foodProvided;
-    
+
     @Column(nullable = false)
     private Boolean wifiAvailable;
-    
+
     @Column(nullable = false)
     private Boolean acAvailable;
 
@@ -47,112 +48,122 @@ public class PG {
     private Long ownerUserId;
 
     // Constructors, getters, and setters
-    public PG() {}
-    
+    public PG() {
+    }
+
     // Add all getters and setters here
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public Long getId() {
+        return id;
+    }
 
-	public String getOwnerName() {
-		return ownerName;
-	}
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-	public void setOwnerName(String ownerName) {
-		this.ownerName = ownerName;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public String getContactNumber() {
-		return contactNumber;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public void setContactNumber(String contactNumber) {
-		this.contactNumber = contactNumber;
-	}
+    public String getOwnerName() {
+        return ownerName;
+    }
 
-	public String getAlternateContact() {
-		return alternateContact;
-	}
+    public void setOwnerName(String ownerName) {
+        this.ownerName = ownerName;
+    }
 
-	public void setAlternateContact(String alternateContact) {
-		this.alternateContact = alternateContact;
-	}
+    public String getContactNumber() {
+        return contactNumber;
+    }
 
-	public String getAddress() {
-		return address;
-	}
+    public void setContactNumber(String contactNumber) {
+        this.contactNumber = contactNumber;
+    }
 
-	public void setAddress(String address) {
-		this.address = address;
-	}
+    public String getAlternateContact() {
+        return alternateContact;
+    }
 
-	public String getLandmark() {
-		return landmark;
-	}
+    public void setAlternateContact(String alternateContact) {
+        this.alternateContact = alternateContact;
+    }
 
-	public void setLandmark(String landmark) {
-		this.landmark = landmark;
-	}
+    public String getAddress() {
+        return address;
+    }
 
-	public BigDecimal getRentSingle() {
-		return rentSingle;
-	}
+    public void setAddress(String address) {
+        this.address = address;
+    }
 
-	public void setRentSingle(BigDecimal rentSingle) {
-		this.rentSingle = rentSingle;
-	}
+    public String getLandmark() {
+        return landmark;
+    }
 
-	public BigDecimal getRentDouble() {
-		return rentDouble;
-	}
+    public void setLandmark(String landmark) {
+        this.landmark = landmark;
+    }
 
-	public void setRentDouble(BigDecimal rentDouble) {
-		this.rentDouble = rentDouble;
-	}
+    public BigDecimal getRentSingle() {
+        return rentSingle;
+    }
 
-	public BigDecimal getRentTriple() {
-		return rentTriple;
-	}
+    public void setRentSingle(BigDecimal rentSingle) {
+        this.rentSingle = rentSingle;
+    }
 
-	public void setRentTriple(BigDecimal rentTriple) {
-		this.rentTriple = rentTriple;
-	}
+    public BigDecimal getRentDouble() {
+        return rentDouble;
+    }
 
-	public Boolean getFoodProvided() {
-		return foodProvided;
-	}
+    public void setRentDouble(BigDecimal rentDouble) {
+        this.rentDouble = rentDouble;
+    }
 
-	public void setFoodProvided(Boolean foodProvided) {
-		this.foodProvided = foodProvided;
-	}
+    public BigDecimal getRentTriple() {
+        return rentTriple;
+    }
 
-	public Boolean getWifiAvailable() {
-		return wifiAvailable;
-	}
+    public void setRentTriple(BigDecimal rentTriple) {
+        this.rentTriple = rentTriple;
+    }
 
-	public void setWifiAvailable(Boolean wifiAvailable) {
-		this.wifiAvailable = wifiAvailable;
-	}
+    public Boolean getFoodProvided() {
+        return foodProvided;
+    }
 
-	public Boolean getAcAvailable() {
-		return acAvailable;
-	}
+    public void setFoodProvided(Boolean foodProvided) {
+        this.foodProvided = foodProvided;
+    }
 
-	public void setAcAvailable(Boolean acAvailable) {
-		this.acAvailable = acAvailable;
-	}
+    public Boolean getWifiAvailable() {
+        return wifiAvailable;
+    }
 
-	public Long getOwnerUserId() {
-		return ownerUserId;
-	}
+    public void setWifiAvailable(Boolean wifiAvailable) {
+        this.wifiAvailable = wifiAvailable;
+    }
 
-	public void setOwnerUserId(Long ownerUserId) {
-		this.ownerUserId = ownerUserId;
-	}
+    public Boolean getAcAvailable() {
+        return acAvailable;
+    }
+
+    public void setAcAvailable(Boolean acAvailable) {
+        this.acAvailable = acAvailable;
+    }
+
+    public Long getOwnerUserId() {
+        return ownerUserId;
+    }
+
+    public void setOwnerUserId(Long ownerUserId) {
+        this.ownerUserId = ownerUserId;
+    }
 
 
-    
 }
 
