@@ -121,6 +121,12 @@ export default function PGDetails() {
                   <MapPin size={16} /> Near {pg.landmark}
                 </p>
               )}
+              {(pg.gender || pg.availableRooms != null) && (
+                <div className="flex gap-3 mt-2 text-sm text-gray-300">
+                  {pg.gender && <span className="capitalize">For {pg.gender}</span>}
+                  {pg.availableRooms != null && <span>· {pg.availableRooms} rooms available</span>}
+                </div>
+              )}
             </div>
 
             <div className="text-right">

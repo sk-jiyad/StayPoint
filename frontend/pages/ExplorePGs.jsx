@@ -11,6 +11,19 @@ const amenityIcons = {
   ac: <Snowflake size={16} />,
 };
 
+const statusStyles = {
+  vacant: { cls: "bg-green-100 text-green-800", text: "Vacant" },
+  few: { cls: "bg-yellow-100 text-yellow-800", text: "Few left" },
+  full: { cls: "bg-red-100 text-red-800", text: "Full" },
+};
+
+function statusFor(availableRooms) {
+  if (availableRooms == null) return null;
+  if (availableRooms <= 0) return "full";
+  if (availableRooms <= 2) return "few";
+  return "vacant";
+}
+
 // Map a backend PGResponseDTO to the shape the cards render.
 function toCard(pg) {
   const amenities = [];
@@ -25,6 +38,9 @@ function toCard(pg) {
     rent: pg.rentSingle,
     amenities,
     image: pg.imageUrls && pg.imageUrls.length > 0 ? pg.imageUrls[0] : null,
+    gender: pg.gender || null,
+    availableRooms: pg.availableRooms ?? null,
+    status: statusFor(pg.availableRooms ?? null),
   };
 }
 
@@ -36,6 +52,8 @@ export default function ExplorePGs() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("Rent (Low→High)");
   const [rentMax, setRentMax] = useState(50000);
+  const [gender, setGender] = useState("all");
+  const [vacancyOnly, setVacancyOnly] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -78,6 +96,14 @@ export default function ExplorePGs() {
 
     data = data.filter((pg) => Number(pg.rent) <= rentMax);
 
+    if (gender !== "all") {
+      data = data.filter((pg) => pg.gender === gender);
+    }
+
+    if (vacancyOnly) {
+      data = data.filter((pg) => pg.status === "vacant" || pg.status === "few");
+    }
+
     switch (sortBy) {
       case "Rent (Low→High)":
         data.sort((a, b) => a.rent - b.rent);
@@ -93,7 +119,7 @@ export default function ExplorePGs() {
     }
 
     return data;
-  }, [pgs, searchTerm, rentMax, sortBy]);
+  }, [pgs, searchTerm, rentMax, gender, vacancyOnly, sortBy]);
 
   return (
     <div className="min-h-screen w-screen bg-[#FFFEF9] py-12 px-4 md:px-10 lg:px-16">
@@ -111,7 +137,7 @@ export default function ExplorePGs() {
 
         {/* Filter Section */}
         <div className="bg-[#191919] rounded-xl p-6 shadow-lg border border-gray-800">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
             {/* Rent */}
             <div className="min-w-0">
               <label className="block text-white text-sm font-medium mb-2">
@@ -128,11 +154,38 @@ export default function ExplorePGs() {
               />
             </div>
 
+            {/* Gender */}
+            <div className="min-w-0">
+              <label className="block text-white text-sm font-medium mb-2">Gender</label>
+              <select
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                className="w-full px-3 py-2 bg-[#383838] rounded-lg text-white focus:border-green-500 focus:outline-none"
+              >
+                <option value="all">All</option>
+                <option value="boys">Boys</option>
+                <option value="girls">Girls</option>
+                <option value="coed">Co-ed</option>
+              </select>
+            </div>
+
+            {/* Vacancy */}
+            <div className="flex flex-col justify-center min-w-0">
+              <label className="text-white text-sm font-medium mb-2">Vacancy</label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={vacancyOnly}
+                  onChange={(e) => setVacancyOnly(e.target.checked)}
+                  className="w-4 h-4 accent-green-500"
+                />
+                <span className="text-gray-300 text-sm">Show only available</span>
+              </label>
+            </div>
+
             {/* Sort By */}
             <div className="min-w-0">
-              <label className="block text-white text-sm font-medium mb-2">
-                Sort By
-              </label>
+              <label className="block text-white text-sm font-medium mb-2">Sort By</label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -171,11 +224,20 @@ export default function ExplorePGs() {
                   </div>
                 )}
                 <div className="p-5">
-                  <div className="mb-2">
-                    <h3 className="text-lg font-semibold text-white">{pg.name}</h3>
-                    <p className="text-sm text-gray-400 flex items-center gap-1">
-                      <MapPin size={14} /> {pg.address}
-                    </p>
+                  <div className="flex justify-between items-start mb-2 gap-2">
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-semibold text-white">{pg.name}</h3>
+                      <p className="text-sm text-gray-400 flex items-center gap-1">
+                        <MapPin size={14} /> {pg.address}
+                      </p>
+                    </div>
+                    {pg.status && (
+                      <span
+                        className={`shrink-0 px-2 py-1 rounded-full text-xs font-semibold ${statusStyles[pg.status].cls}`}
+                      >
+                        {statusStyles[pg.status].text}
+                      </span>
+                    )}
                   </div>
 
                   <p className="text-xl font-bold text-[#87E64B] mb-3">
@@ -196,6 +258,13 @@ export default function ExplorePGs() {
                       <span className="text-xs text-gray-500">No listed amenities</span>
                     )}
                   </div>
+
+                  {(pg.gender || pg.availableRooms != null) && (
+                    <div className="flex items-center gap-3 text-sm text-gray-400 mb-4">
+                      {pg.gender && <span className="capitalize">{pg.gender}</span>}
+                      {pg.availableRooms != null && <span>{pg.availableRooms} rooms left</span>}
+                    </div>
+                  )}
 
                   {pg.landmark && (
                     <p className="text-sm text-gray-400 mb-4">Near {pg.landmark}</p>
@@ -218,7 +287,7 @@ export default function ExplorePGs() {
             <p className="text-gray-400 text-lg">
               {pgs.length === 0
                 ? "No PGs listed yet. Be the first to add one!"
-                : "No PGs match your filters. Try widening the rent range."}
+                : "No PGs match your filters. Try adjusting them."}
             </p>
           </div>
         )}

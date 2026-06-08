@@ -20,6 +20,9 @@ public class PGResponseDTO {
     private Boolean wifiAvailable;
     private Boolean acAvailable;
     private List<String> imageUrls;
+    private String gender;
+    private Integer totalRooms;
+    private Integer availableRooms;
 
     public static PGResponseDTO from(PG pg) {
         PGResponseDTO dto = new PGResponseDTO();
@@ -37,6 +40,9 @@ public class PGResponseDTO {
         dto.wifiAvailable = pg.getWifiAvailable();
         dto.acAvailable = pg.getAcAvailable();
         dto.imageUrls = pg.getImageUrls();
+        dto.gender = pg.getGender();
+        dto.totalRooms = pg.getTotalRooms();
+        dto.availableRooms = pg.getAvailableRooms();
         return dto;
     }
 
@@ -54,4 +60,7 @@ public class PGResponseDTO {
     public Boolean getWifiAvailable() { return wifiAvailable; }
     public Boolean getAcAvailable() { return acAvailable; }
     public List<String> getImageUrls() { return imageUrls; }
+    public String getGender() { return gender; }
+    public Integer getTotalRooms() { return totalRooms; }
+    public Integer getAvailableRooms() { return availableRooms; }
 }

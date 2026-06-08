@@ -92,6 +92,9 @@ export default function AddPG() {
     }
     if (formData.rentTriple !== "") payload.rentTriple = Number(formData.rentTriple)
     if (formData.imageUrls.length > 0) payload.imageUrls = formData.imageUrls
+    payload.gender = formData.gender
+    if (formData.totalRooms !== "") payload.totalRooms = Number(formData.totalRooms)
+    if (formData.availableRooms !== "") payload.availableRooms = Number(formData.availableRooms)
 
     try {
       const created = await pgApi.create(payload)

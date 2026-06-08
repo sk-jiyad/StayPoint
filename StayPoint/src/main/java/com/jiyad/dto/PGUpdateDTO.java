@@ -45,6 +45,15 @@ public class PGUpdateDTO {
     @Size(max = 8, message = "At most 8 images")
     private List<String> imageUrls;
 
+    @Pattern(regexp = "boys|girls|coed", message = "Gender must be boys, girls or coed")
+    private String gender;
+
+    @PositiveOrZero
+    private Integer totalRooms;
+
+    @PositiveOrZero
+    private Integer availableRooms;
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -83,4 +92,13 @@ public class PGUpdateDTO {
 
     public List<String> getImageUrls() { return imageUrls; }
     public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+
+    public Integer getTotalRooms() { return totalRooms; }
+    public void setTotalRooms(Integer totalRooms) { this.totalRooms = totalRooms; }
+
+    public Integer getAvailableRooms() { return availableRooms; }
+    public void setAvailableRooms(Integer availableRooms) { this.availableRooms = availableRooms; }
 }

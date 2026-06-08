@@ -47,6 +47,9 @@ public class PGService {
         pg.setWifiAvailable(dto.getWifiAvailable());
         pg.setAcAvailable(dto.getAcAvailable());
         if (dto.getImageUrls() != null) pg.setImageUrls(dto.getImageUrls());
+        pg.setGender(dto.getGender());
+        pg.setTotalRooms(dto.getTotalRooms());
+        pg.setAvailableRooms(dto.getAvailableRooms());
         pg.setOwnerUserId(AuthUtils.currentUserId());
         return pgRepository.save(pg);
     }
@@ -72,6 +75,9 @@ public class PGService {
         if (dto.getLandmark() != null) pg.setLandmark(dto.getLandmark());
         if (dto.getRentTriple() != null) pg.setRentTriple(dto.getRentTriple());
         if (dto.getImageUrls() != null) pg.setImageUrls(dto.getImageUrls());
+        if (dto.getGender() != null) pg.setGender(dto.getGender());
+        if (dto.getTotalRooms() != null) pg.setTotalRooms(dto.getTotalRooms());
+        if (dto.getAvailableRooms() != null) pg.setAvailableRooms(dto.getAvailableRooms());
 
         return pgRepository.save(pg);
     }

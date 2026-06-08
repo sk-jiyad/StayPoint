@@ -26,6 +26,9 @@ const emptyForm = {
   wifiAvailable: false,
   acAvailable: false,
   imageUrls: [],
+  gender: "boys",
+  totalRooms: "",
+  availableRooms: "",
 };
 
 export default function EditPG() {
@@ -63,6 +66,9 @@ export default function EditPG() {
           wifiAvailable: Boolean(pg.wifiAvailable),
           acAvailable: Boolean(pg.acAvailable),
           imageUrls: pg.imageUrls ?? [],
+          gender: pg.gender ?? "boys",
+          totalRooms: pg.totalRooms ?? "",
+          availableRooms: pg.availableRooms ?? "",
         });
         setLoadError("");
       })
@@ -124,6 +130,9 @@ export default function EditPG() {
     if (form.alternateContact.trim() !== "") payload.alternateContact = form.alternateContact.trim();
     if (String(form.rentTriple).trim() !== "") payload.rentTriple = Number(form.rentTriple);
     payload.imageUrls = form.imageUrls;
+    payload.gender = form.gender;
+    if (String(form.totalRooms).trim() !== "") payload.totalRooms = Number(form.totalRooms);
+    if (String(form.availableRooms).trim() !== "") payload.availableRooms = Number(form.availableRooms);
 
     try {
       await pgApi.update(id, payload);
@@ -185,6 +194,15 @@ export default function EditPG() {
             <input type="number" className={input} placeholder="Single rent *" value={form.rentSingle} onChange={set("rentSingle")} />
             <input type="number" className={input} placeholder="Double rent *" value={form.rentDouble} onChange={set("rentDouble")} />
             <input type="number" className={input} placeholder="Triple rent (optional)" value={form.rentTriple} onChange={set("rentTriple")} />
+          </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            <select className={input} value={form.gender} onChange={set("gender")}>
+              <option value="boys">Boys</option>
+              <option value="girls">Girls</option>
+              <option value="coed">Co-ed</option>
+            </select>
+            <input type="number" className={input} placeholder="Total rooms (optional)" value={form.totalRooms} onChange={set("totalRooms")} />
+            <input type="number" className={input} placeholder="Available rooms (optional)" value={form.availableRooms} onChange={set("availableRooms")} />
           </div>
 
           <div className="flex flex-wrap gap-6 pt-2">

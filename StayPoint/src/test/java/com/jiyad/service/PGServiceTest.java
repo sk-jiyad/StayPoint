@@ -172,4 +172,21 @@ class PGServiceTest {
         verify(pgRepository).save(captor.capture());
         assertEquals(List.of("https://img/a.jpg", "https://img/b.jpg"), captor.getValue().getImageUrls());
     }
+
+    @Test
+    void createPG_persistsGenderAndRooms() {
+        authenticateAs(7L);
+        when(pgRepository.save(any(PG.class))).thenAnswer(inv -> inv.getArgument(0));
+        PGCreateDTO dto = validCreateDto();
+        dto.setGender("girls");
+        dto.setTotalRooms(10);
+        dto.setAvailableRooms(3);
+
+        pgService.createPG(dto);
+
+        ArgumentCaptor<PG> captor = ArgumentCaptor.forClass(PG.class);
+        verify(pgRepository).save(captor.capture());
+        assertEquals("girls", captor.getValue().getGender());
+        assertEquals(3, captor.getValue().getAvailableRooms());
+    }
 }

@@ -46,6 +46,13 @@ public class PG {
     @Column(nullable = false)
     private Boolean acAvailable;
 
+    // boys | girls | coed (nullable for listings created before this field existed)
+    private String gender;
+
+    private Integer totalRooms;
+
+    private Integer availableRooms;
+
     @Column(nullable = false)
     private Long ownerUserId;
 
@@ -161,6 +168,30 @@ public class PG {
 
     public void setAcAvailable(Boolean acAvailable) {
         this.acAvailable = acAvailable;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public Integer getTotalRooms() {
+        return totalRooms;
+    }
+
+    public void setTotalRooms(Integer totalRooms) {
+        this.totalRooms = totalRooms;
+    }
+
+    public Integer getAvailableRooms() {
+        return availableRooms;
+    }
+
+    public void setAvailableRooms(Integer availableRooms) {
+        this.availableRooms = availableRooms;
     }
 
     public Long getOwnerUserId() {
