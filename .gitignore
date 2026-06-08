@@ -34,5 +34,11 @@ Thumbs.db
 # Environment
 .env
 
+# Claude Code local settings
+.claude/
+
+# gitingest / repo dumps
+shreyas-2321-sp-8a5edab282632443.txt
+
 Final year pd2.pdf
 Project Proposal.docx
