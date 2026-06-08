@@ -57,6 +57,11 @@ export const authApi = {
   login: (payload) => request("/auth/login", { method: "POST", body: payload }),
 };
 
+export const uploadApi = {
+  // Returns a backend-signed payload for a direct-to-Cloudinary upload.
+  signature: () => request("/uploads/signature", { method: "POST" }),
+};
+
 export const pgApi = {
   list: () => request("/pgs"),
   get: (id) => request(`/pgs/${id}`),

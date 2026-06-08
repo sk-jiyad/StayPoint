@@ -46,6 +46,7 @@ public class PGService {
         pg.setFoodProvided(dto.getFoodProvided());
         pg.setWifiAvailable(dto.getWifiAvailable());
         pg.setAcAvailable(dto.getAcAvailable());
+        if (dto.getImageUrls() != null) pg.setImageUrls(dto.getImageUrls());
         pg.setOwnerUserId(AuthUtils.currentUserId());
         return pgRepository.save(pg);
     }
@@ -70,6 +71,7 @@ public class PGService {
         if (dto.getAlternateContact() != null) pg.setAlternateContact(dto.getAlternateContact());
         if (dto.getLandmark() != null) pg.setLandmark(dto.getLandmark());
         if (dto.getRentTriple() != null) pg.setRentTriple(dto.getRentTriple());
+        if (dto.getImageUrls() != null) pg.setImageUrls(dto.getImageUrls());
 
         return pgRepository.save(pg);
     }

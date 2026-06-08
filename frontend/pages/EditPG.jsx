@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../src/lib/auth.jsx";
 import { pgApi, ApiError } from "../src/lib/api.js";
+import { uploadImage } from "../src/lib/cloudinary.js";
 
 const AMENITIES = [
   { key: "wifiAvailable", label: "WiFi" },
@@ -24,6 +25,7 @@ const emptyForm = {
   foodProvided: false,
   wifiAvailable: false,
   acAvailable: false,
+  imageUrls: [],
 };
 
 export default function EditPG() {
@@ -36,6 +38,8 @@ export default function EditPG() {
   const [loadError, setLoadError] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   useEffect(() => {
     if (!isOwner) return;
@@ -58,6 +62,7 @@ export default function EditPG() {
           foodProvided: Boolean(pg.foodProvided),
           wifiAvailable: Boolean(pg.wifiAvailable),
           acAvailable: Boolean(pg.acAvailable),
+          imageUrls: pg.imageUrls ?? [],
         });
         setLoadError("");
       })
@@ -80,6 +85,26 @@ export default function EditPG() {
     setForm((f) => ({ ...f, [field]: value }));
   };
 
+  const handleFiles = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setUploadError("");
+    setUploading(true);
+    try {
+      const urls = [];
+      for (const file of files) urls.push(await uploadImage(file));
+      setForm((f) => ({ ...f, imageUrls: [...f.imageUrls, ...urls] }));
+    } catch (err) {
+      setUploadError(err.message || "Upload failed");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const removeImage = (url) =>
+    setForm((f) => ({ ...f, imageUrls: f.imageUrls.filter((u) => u !== url) }));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -98,6 +123,7 @@ export default function EditPG() {
     };
     if (form.alternateContact.trim() !== "") payload.alternateContact = form.alternateContact.trim();
     if (String(form.rentTriple).trim() !== "") payload.rentTriple = Number(form.rentTriple);
+    payload.imageUrls = form.imageUrls;
 
     try {
       await pgApi.update(id, payload);
@@ -173,6 +199,30 @@ export default function EditPG() {
                 {a.label}
               </label>
             ))}
+          </div>
+
+          {/* Photos */}
+          <div className="pt-2">
+            <label className="block text-sm text-gray-400 mb-2">Photos</label>
+            <div className="flex flex-wrap gap-3">
+              {form.imageUrls.map((url) => (
+                <div key={url} className="relative">
+                  <img src={url} alt="" className="w-20 h-20 object-cover rounded-lg" />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(url)}
+                    className="absolute -top-2 -right-2 bg-black/80 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <label className="w-20 h-20 border-2 border-dashed border-gray-700 rounded-lg flex items-center justify-center cursor-pointer hover:border-green-500 text-gray-400 text-sm">
+                {uploading ? "…" : "+ Add"}
+                <input type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} disabled={uploading} />
+              </label>
+            </div>
+            {uploadError && <p className="text-sm text-red-400 mt-1">{uploadError}</p>}
           </div>
 
           {error && (

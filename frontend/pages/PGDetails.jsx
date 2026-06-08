@@ -9,6 +9,8 @@ import {
   ArrowLeft,
   Bookmark,
   Home,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { pgApi, ApiError } from "../src/lib/api.js";
 
@@ -19,6 +21,7 @@ export default function PGDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [currentImage, setCurrentImage] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -45,6 +48,8 @@ export default function PGDetails() {
     return <div className="text-gray-700 text-center mt-20 text-xl">{error || "PG not found"}</div>;
   }
 
+  const images = pg.imageUrls || [];
+
   const amenities = [];
   if (pg.wifiAvailable) amenities.push("WiFi");
   if (pg.foodProvided) amenities.push("Food");
@@ -62,11 +67,37 @@ export default function PGDetails() {
           Back to listings
         </button>
 
-        {/* Photo placeholder (backend doesn't store images yet) */}
+        {/* Photos */}
         <div className="relative rounded-xl overflow-hidden">
-          <div className="w-full h-[400px] bg-gradient-to-br from-gray-800 to-gray-700 flex items-center justify-center">
-            <Home className="w-20 h-20 text-gray-600" />
-          </div>
+          {images.length > 0 ? (
+            <img
+              src={images[currentImage]}
+              alt={pg.name}
+              className="w-full h-[400px] object-cover"
+            />
+          ) : (
+            <div className="w-full h-[400px] bg-gradient-to-br from-gray-800 to-gray-700 flex items-center justify-center">
+              <Home className="w-20 h-20 text-gray-600" />
+            </div>
+          )}
+
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={() => setCurrentImage((i) => (i === 0 ? images.length - 1 : i - 1))}
+                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/60 p-2 rounded-full"
+              >
+                <ChevronLeft className="text-white" />
+              </button>
+              <button
+                onClick={() => setCurrentImage((i) => (i + 1) % images.length)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/60 p-2 rounded-full"
+              >
+                <ChevronRight className="text-white" />
+              </button>
+            </>
+          )}
+
           <button
             onClick={() => setSaved(!saved)}
             className="absolute top-4 right-4 bg-black/70 p-2 rounded-full"

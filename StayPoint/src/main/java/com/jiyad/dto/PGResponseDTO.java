@@ -2,6 +2,7 @@ package com.jiyad.dto;
 
 import com.jiyad.model.PG;
 import java.math.BigDecimal;
+import java.util.List;
 
 public class PGResponseDTO {
 
@@ -18,6 +19,7 @@ public class PGResponseDTO {
     private Boolean foodProvided;
     private Boolean wifiAvailable;
     private Boolean acAvailable;
+    private List<String> imageUrls;
 
     public static PGResponseDTO from(PG pg) {
         PGResponseDTO dto = new PGResponseDTO();
@@ -34,6 +36,7 @@ public class PGResponseDTO {
         dto.foodProvided = pg.getFoodProvided();
         dto.wifiAvailable = pg.getWifiAvailable();
         dto.acAvailable = pg.getAcAvailable();
+        dto.imageUrls = pg.getImageUrls();
         return dto;
     }
 
@@ -50,4 +53,5 @@ public class PGResponseDTO {
     public Boolean getFoodProvided() { return foodProvided; }
     public Boolean getWifiAvailable() { return wifiAvailable; }
     public Boolean getAcAvailable() { return acAvailable; }
+    public List<String> getImageUrls() { return imageUrls; }
 }

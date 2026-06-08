@@ -39,6 +39,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/pgs").hasAuthority("ROLE_OWNER")
                 .requestMatchers(HttpMethod.PUT, "/api/pgs/**").hasAuthority("ROLE_OWNER")
                 .requestMatchers(HttpMethod.DELETE, "/api/pgs/**").hasAuthority("ROLE_OWNER")
+                .requestMatchers("/api/uploads/**").hasAuthority("ROLE_OWNER")
                 .anyRequest().authenticated())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

@@ -2,6 +2,7 @@ package com.jiyad.dto;
 
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
+import java.util.List;
 
 public class PGUpdateDTO {
 
@@ -41,6 +42,9 @@ public class PGUpdateDTO {
 
     private Boolean acAvailable;
 
+    @Size(max = 8, message = "At most 8 images")
+    private List<String> imageUrls;
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -76,4 +80,7 @@ public class PGUpdateDTO {
 
     public BigDecimal getRentTriple() { return rentTriple; }
     public void setRentTriple(BigDecimal rentTriple) { this.rentTriple = rentTriple; }
+
+    public List<String> getImageUrls() { return imageUrls; }
+    public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
 }

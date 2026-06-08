@@ -24,6 +24,7 @@ function toCard(pg) {
     landmark: pg.landmark,
     rent: pg.rentSingle,
     amenities,
+    image: pg.imageUrls && pg.imageUrls.length > 0 ? pg.imageUrls[0] : null,
   };
 }
 
@@ -162,10 +163,13 @@ export default function ExplorePGs() {
                 key={pg.id}
                 className="bg-[#191919] rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:-translate-y-1 transition-transform duration-200 border border-gray-800"
               >
-                {/* Photos aren't stored by the backend yet — neutral placeholder. */}
-                <div className="w-full h-48 bg-gradient-to-br from-gray-800 to-gray-700 flex items-center justify-center">
-                  <Home className="w-12 h-12 text-gray-600" />
-                </div>
+                {pg.image ? (
+                  <img src={pg.image} alt={pg.name} className="w-full h-48 object-cover" />
+                ) : (
+                  <div className="w-full h-48 bg-gradient-to-br from-gray-800 to-gray-700 flex items-center justify-center">
+                    <Home className="w-12 h-12 text-gray-600" />
+                  </div>
+                )}
                 <div className="p-5">
                   <div className="mb-2">
                     <h3 className="text-lg font-semibold text-white">{pg.name}</h3>

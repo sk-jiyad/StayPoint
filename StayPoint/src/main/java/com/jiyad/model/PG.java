@@ -3,6 +3,8 @@ package com.jiyad.model;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "pgs")
@@ -46,6 +48,11 @@ public class PG {
 
     @Column(nullable = false)
     private Long ownerUserId;
+
+    @ElementCollection
+    @CollectionTable(name = "pg_images", joinColumns = @JoinColumn(name = "pg_id"))
+    @Column(name = "image_url")
+    private List<String> imageUrls = new ArrayList<>();
 
     // Constructors, getters, and setters
     public PG() {
@@ -164,6 +171,13 @@ public class PG {
         this.ownerUserId = ownerUserId;
     }
 
+    public List<String> getImageUrls() {
+        return imageUrls;
+    }
+
+    public void setImageUrls(List<String> imageUrls) {
+        this.imageUrls = imageUrls;
+    }
 
 }
 

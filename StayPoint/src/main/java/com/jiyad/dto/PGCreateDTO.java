@@ -2,6 +2,7 @@ package com.jiyad.dto;
 
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
+import java.util.List;
 
 public class PGCreateDTO {
 
@@ -50,6 +51,9 @@ public class PGCreateDTO {
     @NotNull(message = "acAvailable is required")
     private Boolean acAvailable;
 
+    @Size(max = 8, message = "At most 8 images")
+    private List<String> imageUrls;
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -85,4 +89,7 @@ public class PGCreateDTO {
 
     public Boolean getAcAvailable() { return acAvailable; }
     public void setAcAvailable(Boolean acAvailable) { this.acAvailable = acAvailable; }
+
+    public List<String> getImageUrls() { return imageUrls; }
+    public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
 }

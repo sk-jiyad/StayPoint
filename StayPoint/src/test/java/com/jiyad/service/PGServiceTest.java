@@ -158,4 +158,18 @@ class PGServiceTest {
         assertEquals(42L, result.get(0).getOwnerUserId());
         verify(pgRepository).findByOwnerUserId(42L);
     }
+
+    @Test
+    void createPG_persistsImageUrls() {
+        authenticateAs(7L);
+        when(pgRepository.save(any(PG.class))).thenAnswer(inv -> inv.getArgument(0));
+        PGCreateDTO dto = validCreateDto();
+        dto.setImageUrls(List.of("https://img/a.jpg", "https://img/b.jpg"));
+
+        pgService.createPG(dto);
+
+        ArgumentCaptor<PG> captor = ArgumentCaptor.forClass(PG.class);
+        verify(pgRepository).save(captor.capture());
+        assertEquals(List.of("https://img/a.jpg", "https://img/b.jpg"), captor.getValue().getImageUrls());
+    }
 }

@@ -5,6 +5,7 @@ import { useNavigate, Link } from "react-router-dom"
 import { Upload } from "lucide-react"
 import { useAuth } from "../src/lib/auth.jsx"
 import { pgApi, ApiError } from "../src/lib/api.js"
+import { uploadImage } from "../src/lib/cloudinary.js"
 
 export default function AddPG() {
   const navigate = useNavigate()
@@ -15,6 +16,8 @@ export default function AddPG() {
   const [createdId, setCreatedId] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState("")
   const [formData, setFormData] = useState({
     pgName: "",
     address: "",
@@ -30,6 +33,7 @@ export default function AddPG() {
     ownerName: "",
     phone: "",
     email: "",
+    imageUrls: [],
   })
 
   const handleInputChange = (e) => {
@@ -44,6 +48,29 @@ export default function AddPG() {
         ? prev.amenities.filter((a) => a !== amenity)
         : [...prev.amenities, amenity],
     }))
+  }
+
+  const handleFiles = async (e) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+    setUploadError("")
+    setUploading(true)
+    try {
+      const urls = []
+      for (const file of files) {
+        urls.push(await uploadImage(file))
+      }
+      setFormData((f) => ({ ...f, imageUrls: [...f.imageUrls, ...urls] }))
+    } catch (err) {
+      setUploadError(err.message || "Upload failed")
+    } finally {
+      setUploading(false)
+      e.target.value = ""
+    }
+  }
+
+  const removeImage = (url) => {
+    setFormData((f) => ({ ...f, imageUrls: f.imageUrls.filter((u) => u !== url) }))
   }
 
   const submitPG = async () => {
@@ -64,6 +91,7 @@ export default function AddPG() {
       acAvailable: formData.amenities.includes("AC"),
     }
     if (formData.rentTriple !== "") payload.rentTriple = Number(formData.rentTriple)
+    if (formData.imageUrls.length > 0) payload.imageUrls = formData.imageUrls
 
     try {
       const created = await pgApi.create(payload)
@@ -287,14 +315,37 @@ export default function AddPG() {
             {step === 4 && (
               <div className="space-y-4">
                 <h2 className="text-3xl font-bold text-white mb-6">Upload Photos</h2>
-                <div className="border-2 border-dashed border-gray-700 rounded-lg p-12 text-center w-full">
+                <label className="border-2 border-dashed border-gray-700 rounded-lg p-12 text-center w-full block cursor-pointer hover:border-green-500 transition">
                   <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-300 mb-2">Photo upload is coming soon</p>
-                  <input type="file" multiple className="hidden" />
-                  <button type="button" className="text-green-500 hover:text-green-400 transition" disabled>
-                    Or click to browse
-                  </button>
-                </div>
+                  <p className="text-gray-300 mb-2">
+                    {uploading ? "Uploading…" : "Click to add photos"}
+                  </p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleFiles}
+                    disabled={uploading}
+                  />
+                </label>
+                {uploadError && <p className="text-sm text-red-400">{uploadError}</p>}
+                {formData.imageUrls.length > 0 && (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                    {formData.imageUrls.map((url) => (
+                      <div key={url} className="relative">
+                        <img src={url} alt="" className="w-full h-24 object-cover rounded-lg" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(url)}
+                          className="absolute top-1 right-1 bg-black/70 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
