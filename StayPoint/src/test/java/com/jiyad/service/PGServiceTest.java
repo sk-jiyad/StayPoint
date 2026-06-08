@@ -21,6 +21,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -141,5 +142,20 @@ class PGServiceTest {
         pgService.deletePG(1L);
 
         verify(pgRepository).delete(pg);
+    }
+
+    @Test
+    void getMyPGs_returnsOnlyCurrentOwnersPGs() {
+        authenticateAs(42L);
+        PG mine = new PG();
+        mine.setId(1L);
+        mine.setOwnerUserId(42L);
+        when(pgRepository.findByOwnerUserId(42L)).thenReturn(List.of(mine));
+
+        List<PG> result = pgService.getMyPGs();
+
+        assertEquals(1, result.size());
+        assertEquals(42L, result.get(0).getOwnerUserId());
+        verify(pgRepository).findByOwnerUserId(42L);
     }
 }

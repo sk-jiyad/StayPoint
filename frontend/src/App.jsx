@@ -6,6 +6,8 @@ import ExplorePGs from "../pages/ExplorePGs";
 import AddPG from "../pages/AddPG";
 import PGDetails from "../pages/PGDetails";
 import Login from "../pages/Login";
+import MyListings from "../pages/MyListings";
+import EditPG from "../pages/EditPG";
 import "./index.css";
 
 function App() {
@@ -19,6 +21,8 @@ function App() {
           <Route path="/add-pg" element={<AddPG />} />
           <Route path="/pg/:id" element={<PGDetails />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/my-listings" element={<MyListings />} />
+          <Route path="/edit-pg/:id" element={<EditPG />} />
 
           {/* Optional 404 */}
           <Route

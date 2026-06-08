@@ -31,6 +31,14 @@ public class PGController {
         return ResponseEntity.ok(pgs);
     }
 
+    @GetMapping("/mine")
+    public ResponseEntity<List<PGResponseDTO>> getMyPGs() {
+        List<PGResponseDTO> pgs = pgService.getMyPGs().stream()
+            .map(PGResponseDTO::from)
+            .toList();
+        return ResponseEntity.ok(pgs);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<PGResponseDTO> getPGById(@PathVariable Long id) {
         PG pg = pgService.getPGById(id)

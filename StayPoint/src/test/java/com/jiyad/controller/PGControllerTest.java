@@ -103,4 +103,18 @@ class PGControllerTest {
         mockMvc.perform(get("/api/pgs/99"))
             .andExpect(status().isNotFound());
     }
+
+    @Test
+    void getMyPGs_returnsOwnersListings() throws Exception {
+        com.jiyad.model.PG pg = new com.jiyad.model.PG();
+        pg.setId(1L);
+        pg.setName("Mine PG");
+        pg.setOwnerUserId(42L);
+        when(pgService.getMyPGs()).thenReturn(List.of(pg));
+
+        mockMvc.perform(get("/api/pgs/mine"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[0].name").value("Mine PG"));
+    }
 }

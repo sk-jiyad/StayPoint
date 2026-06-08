@@ -38,6 +38,11 @@ export default function Navbar() {
                 Add Your PG
               </Link>
             )}
+            {isOwner && (
+              <Link to="/my-listings" className="text-white hover:text-[#87E64B] transition no-underline">
+                My Listings
+              </Link>
+            )}
           </div>
 
           {/* Auth Buttons */}
@@ -88,6 +93,11 @@ export default function Navbar() {
             {isOwner && (
               <Link to="/add-pg" className="block px-4 py-2 text-white hover:text-green-500 no-underline">
                 Add Your PG
+              </Link>
+            )}
+            {isOwner && (
+              <Link to="/my-listings" className="block px-4 py-2 text-white hover:text-green-500 no-underline">
+                My Listings
               </Link>
             )}
             <div className="flex gap-2 px-4 py-2 mt-2">

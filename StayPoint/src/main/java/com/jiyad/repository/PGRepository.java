@@ -18,4 +18,7 @@ public interface PGRepository extends JpaRepository<PG, Long> {
     @Query("SELECT p FROM PG p WHERE p.rentSingle BETWEEN :minRent AND :maxRent")
     List<PG> findByRentRange(@Param("minRent") BigDecimal minRent,
                            @Param("maxRent") BigDecimal maxRent);
+
+    // PGs created by a specific user (powers the owner "My Listings" dashboard)
+    List<PG> findByOwnerUserId(Long ownerUserId);
 }

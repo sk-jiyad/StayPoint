@@ -60,8 +60,11 @@ export const authApi = {
 export const pgApi = {
   list: () => request("/pgs"),
   get: (id) => request(`/pgs/${id}`),
+  mine: () => request("/pgs/mine"),
   search: (location) => request(`/pgs/search?location=${encodeURIComponent(location)}`),
   filter: (minRent, maxRent) =>
     request(`/pgs/filter?minRent=${encodeURIComponent(minRent)}&maxRent=${encodeURIComponent(maxRent)}`),
   create: (payload) => request("/pgs", { method: "POST", body: payload }),
+  update: (id, payload) => request(`/pgs/${id}`, { method: "PUT", body: payload }),
+  remove: (id) => request(`/pgs/${id}`, { method: "DELETE" }),
 };

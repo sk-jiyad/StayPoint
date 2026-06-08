@@ -90,6 +90,10 @@ public class PGService {
         return pgRepository.findByRentRange(minRent, maxRent);
     }
 
+    public List<PG> getMyPGs() {
+        return pgRepository.findByOwnerUserId(AuthUtils.currentUserId());
+    }
+
     private void assertOwnership(PG pg) {
         Long currentUserId = AuthUtils.currentUserId();
         if (!currentUserId.equals(pg.getOwnerUserId())) {
