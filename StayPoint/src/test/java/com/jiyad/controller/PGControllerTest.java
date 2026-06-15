@@ -5,6 +5,7 @@ import com.jiyad.dto.PGCreateDTO;
 import com.jiyad.exception.ResourceNotFoundException;
 import com.jiyad.security.JwtAuthFilter;
 import com.jiyad.service.PGService;
+import com.jiyad.service.RecommendationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -30,6 +31,7 @@ class PGControllerTest {
     @Autowired private ObjectMapper objectMapper;
 
     @MockitoBean private PGService pgService;
+    @MockitoBean private RecommendationService recommendationService;
     @MockitoBean private JwtAuthFilter jwtAuthFilter;
 
     @Test

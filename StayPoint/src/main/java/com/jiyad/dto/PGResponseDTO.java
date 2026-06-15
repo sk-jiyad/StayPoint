@@ -23,6 +23,13 @@ public class PGResponseDTO {
     private String gender;
     private Integer totalRooms;
     private Integer availableRooms;
+    private Boolean verified;
+    private String nearbyCollege;
+    private Boolean laundryAvailable;
+    private Boolean parkingAvailable;
+    private Boolean attachedBathroom;
+    private Double avgRating;
+    private Integer reviewCount;
 
     public static PGResponseDTO from(PG pg) {
         PGResponseDTO dto = new PGResponseDTO();
@@ -43,6 +50,13 @@ public class PGResponseDTO {
         dto.gender = pg.getGender();
         dto.totalRooms = pg.getTotalRooms();
         dto.availableRooms = pg.getAvailableRooms();
+        dto.verified = pg.getVerified();
+        dto.nearbyCollege = pg.getNearbyCollege();
+        dto.laundryAvailable = pg.getLaundryAvailable();
+        dto.parkingAvailable = pg.getParkingAvailable();
+        dto.attachedBathroom = pg.getAttachedBathroom();
+        dto.avgRating = pg.getAvgRating();
+        dto.reviewCount = pg.getReviewCount();
         return dto;
     }
 
@@ -63,4 +77,11 @@ public class PGResponseDTO {
     public String getGender() { return gender; }
     public Integer getTotalRooms() { return totalRooms; }
     public Integer getAvailableRooms() { return availableRooms; }
+    public Boolean getVerified() { return verified; }
+    public String getNearbyCollege() { return nearbyCollege; }
+    public Boolean getLaundryAvailable() { return laundryAvailable; }
+    public Boolean getParkingAvailable() { return parkingAvailable; }
+    public Boolean getAttachedBathroom() { return attachedBathroom; }
+    public Double getAvgRating() { return avgRating; }
+    public Integer getReviewCount() { return reviewCount; }
 }

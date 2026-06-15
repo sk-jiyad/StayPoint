@@ -13,6 +13,9 @@ public interface PGRepository extends JpaRepository<PG, Long> {
     
     // Find PGs by location (address contains keyword)
     List<PG> findByAddressContainingIgnoreCase(String location);
+
+    // Find PGs near a given college (powers "search by college")
+    List<PG> findByNearbyCollegeContainingIgnoreCase(String college);
     
     // Find PGs within rent range
     @Query("SELECT p FROM PG p WHERE p.rentSingle BETWEEN :minRent AND :maxRent")

@@ -50,6 +50,7 @@ export function AuthProvider({ children }) {
       user: auth ? { userId: auth.userId, email: auth.email, role: auth.role } : null,
       isAuthenticated: Boolean(auth?.token),
       isOwner: auth?.role === "ROLE_OWNER",
+      isAdmin: auth?.role === "ROLE_ADMIN",
       login,
       register,
       logout,

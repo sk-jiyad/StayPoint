@@ -61,6 +61,23 @@ public class PG {
     @Column(name = "image_url")
     private List<String> imageUrls = new ArrayList<>();
 
+    // Admin-set trust flag (nullable for rows created before this field existed -> treat null as false)
+    private Boolean verified;
+
+    // Nearby college this PG is convenient for (powers "search by college" + recommendation proximity)
+    private String nearbyCollege;
+
+    private Boolean laundryAvailable;
+
+    private Boolean parkingAvailable;
+
+    private Boolean attachedBathroom;
+
+    // Denormalised from reviews so listing/recommendation reads stay cheap (recomputed by ReviewService)
+    private Double avgRating;
+
+    private Integer reviewCount;
+
     // Constructors, getters, and setters
     public PG() {
     }
@@ -208,6 +225,62 @@ public class PG {
 
     public void setImageUrls(List<String> imageUrls) {
         this.imageUrls = imageUrls;
+    }
+
+    public Boolean getVerified() {
+        return verified;
+    }
+
+    public void setVerified(Boolean verified) {
+        this.verified = verified;
+    }
+
+    public String getNearbyCollege() {
+        return nearbyCollege;
+    }
+
+    public void setNearbyCollege(String nearbyCollege) {
+        this.nearbyCollege = nearbyCollege;
+    }
+
+    public Boolean getLaundryAvailable() {
+        return laundryAvailable;
+    }
+
+    public void setLaundryAvailable(Boolean laundryAvailable) {
+        this.laundryAvailable = laundryAvailable;
+    }
+
+    public Boolean getParkingAvailable() {
+        return parkingAvailable;
+    }
+
+    public void setParkingAvailable(Boolean parkingAvailable) {
+        this.parkingAvailable = parkingAvailable;
+    }
+
+    public Boolean getAttachedBathroom() {
+        return attachedBathroom;
+    }
+
+    public void setAttachedBathroom(Boolean attachedBathroom) {
+        this.attachedBathroom = attachedBathroom;
+    }
+
+    public Double getAvgRating() {
+        return avgRating;
+    }
+
+    public void setAvgRating(Double avgRating) {
+        this.avgRating = avgRating;
+    }
+
+    public Integer getReviewCount() {
+        return reviewCount;
+    }
+
+    public void setReviewCount(Integer reviewCount) {
+        this.reviewCount = reviewCount;
     }
 
 }

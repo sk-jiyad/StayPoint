@@ -8,7 +8,7 @@ import { useAuth } from "../src/lib/auth.jsx"
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const navigate = useNavigate()
-  const { isAuthenticated, isOwner, user, logout } = useAuth()
+  const { isAuthenticated, isOwner, isAdmin, user, logout } = useAuth()
 
   const handleLogout = () => {
     logout()
@@ -41,6 +41,11 @@ export default function Navbar() {
             {isOwner && (
               <Link to="/my-listings" className="text-white hover:text-[#87E64B] transition no-underline">
                 My Listings
+              </Link>
+            )}
+            {isAdmin && (
+              <Link to="/admin" className="text-white hover:text-[#87E64B] transition no-underline">
+                Admin
               </Link>
             )}
           </div>
@@ -98,6 +103,11 @@ export default function Navbar() {
             {isOwner && (
               <Link to="/my-listings" className="block px-4 py-2 text-white hover:text-green-500 no-underline">
                 My Listings
+              </Link>
+            )}
+            {isAdmin && (
+              <Link to="/admin" className="block px-4 py-2 text-white hover:text-green-500 no-underline">
+                Admin
               </Link>
             )}
             <div className="flex gap-2 px-4 py-2 mt-2">

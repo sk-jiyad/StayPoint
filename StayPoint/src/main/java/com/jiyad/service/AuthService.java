@@ -39,6 +39,10 @@ public class AuthService {
         if (userRepository.existsByEmail(dto.getEmail())) {
             throw new IllegalArgumentException("Email already registered");
         }
+        // Admins are seeded by AdminSeeder, never self-registered.
+        if (dto.getRole() == com.jiyad.model.Role.ROLE_ADMIN) {
+            throw new IllegalArgumentException("Cannot self-register as admin");
+        }
         // Intentional simplification: clients self-select ROLE_USER vs ROLE_OWNER so the
         // demo can exercise both paths. Production would gate OWNER on email verification
         // or admin approval. See README "Design Decisions".

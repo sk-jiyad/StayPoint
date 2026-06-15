@@ -50,6 +50,11 @@ public class PGService {
         pg.setGender(dto.getGender());
         pg.setTotalRooms(dto.getTotalRooms());
         pg.setAvailableRooms(dto.getAvailableRooms());
+        pg.setNearbyCollege(dto.getNearbyCollege());
+        pg.setLaundryAvailable(dto.getLaundryAvailable());
+        pg.setParkingAvailable(dto.getParkingAvailable());
+        pg.setAttachedBathroom(dto.getAttachedBathroom());
+        pg.setVerified(false);
         pg.setOwnerUserId(AuthUtils.currentUserId());
         return pgRepository.save(pg);
     }
@@ -78,6 +83,10 @@ public class PGService {
         if (dto.getGender() != null) pg.setGender(dto.getGender());
         if (dto.getTotalRooms() != null) pg.setTotalRooms(dto.getTotalRooms());
         if (dto.getAvailableRooms() != null) pg.setAvailableRooms(dto.getAvailableRooms());
+        if (dto.getNearbyCollege() != null) pg.setNearbyCollege(dto.getNearbyCollege());
+        if (dto.getLaundryAvailable() != null) pg.setLaundryAvailable(dto.getLaundryAvailable());
+        if (dto.getParkingAvailable() != null) pg.setParkingAvailable(dto.getParkingAvailable());
+        if (dto.getAttachedBathroom() != null) pg.setAttachedBathroom(dto.getAttachedBathroom());
 
         return pgRepository.save(pg);
     }
@@ -94,12 +103,33 @@ public class PGService {
         return pgRepository.findByAddressContainingIgnoreCase(location);
     }
 
+    public List<PG> searchPGsByCollege(String college) {
+        return pgRepository.findByNearbyCollegeContainingIgnoreCase(college);
+    }
+
     public List<PG> filterPGsByRent(BigDecimal minRent, BigDecimal maxRent) {
         return pgRepository.findByRentRange(minRent, maxRent);
     }
 
     public List<PG> getMyPGs() {
         return pgRepository.findByOwnerUserId(AuthUtils.currentUserId());
+    }
+
+    // --- Admin operations (route-gated by ROLE_ADMIN in SecurityConfig, so no ownership check) ---
+
+    @Transactional
+    public PG setVerified(Long id, boolean verified) {
+        PG pg = pgRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("PG not found with id " + id));
+        pg.setVerified(verified);
+        return pgRepository.save(pg);
+    }
+
+    @Transactional
+    public void deleteByIdAsAdmin(Long id) {
+        PG pg = pgRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("PG not found with id " + id));
+        pgRepository.delete(pg);
     }
 
     private void assertOwnership(PG pg) {

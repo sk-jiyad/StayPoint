@@ -8,6 +8,8 @@ import PGDetails from "../pages/PGDetails";
 import Login from "../pages/Login";
 import MyListings from "../pages/MyListings";
 import EditPG from "../pages/EditPG";
+import Admin from "../pages/Admin";
+import ChatWidget from "../components/ChatWidget";
 import "./index.css";
 
 function App() {
@@ -23,6 +25,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/my-listings" element={<MyListings />} />
           <Route path="/edit-pg/:id" element={<EditPG />} />
+          <Route path="/admin" element={<Admin />} />
 
           {/* Optional 404 */}
           <Route
@@ -36,6 +39,7 @@ function App() {
         </Routes>
       </main>
       <Footer />
+      <ChatWidget />
     </div>
   );
 }

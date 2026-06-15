@@ -10,6 +10,9 @@ const AMENITIES = [
   { key: "wifiAvailable", label: "WiFi" },
   { key: "foodProvided", label: "Food" },
   { key: "acAvailable", label: "AC" },
+  { key: "laundryAvailable", label: "Laundry" },
+  { key: "parkingAvailable", label: "Parking" },
+  { key: "attachedBathroom", label: "Attached Bath" },
 ];
 
 const emptyForm = {
@@ -25,8 +28,12 @@ const emptyForm = {
   foodProvided: false,
   wifiAvailable: false,
   acAvailable: false,
+  laundryAvailable: false,
+  parkingAvailable: false,
+  attachedBathroom: false,
   imageUrls: [],
   gender: "boys",
+  nearbyCollege: "",
   totalRooms: "",
   availableRooms: "",
 };
@@ -65,8 +72,12 @@ export default function EditPG() {
           foodProvided: Boolean(pg.foodProvided),
           wifiAvailable: Boolean(pg.wifiAvailable),
           acAvailable: Boolean(pg.acAvailable),
+          laundryAvailable: Boolean(pg.laundryAvailable),
+          parkingAvailable: Boolean(pg.parkingAvailable),
+          attachedBathroom: Boolean(pg.attachedBathroom),
           imageUrls: pg.imageUrls ?? [],
           gender: pg.gender ?? "boys",
+          nearbyCollege: pg.nearbyCollege ?? "",
           totalRooms: pg.totalRooms ?? "",
           availableRooms: pg.availableRooms ?? "",
         });
@@ -125,12 +136,16 @@ export default function EditPG() {
       foodProvided: form.foodProvided,
       wifiAvailable: form.wifiAvailable,
       acAvailable: form.acAvailable,
+      laundryAvailable: form.laundryAvailable,
+      parkingAvailable: form.parkingAvailable,
+      attachedBathroom: form.attachedBathroom,
       landmark: form.landmark,
     };
     if (form.alternateContact.trim() !== "") payload.alternateContact = form.alternateContact.trim();
     if (String(form.rentTriple).trim() !== "") payload.rentTriple = Number(form.rentTriple);
     payload.imageUrls = form.imageUrls;
     payload.gender = form.gender;
+    payload.nearbyCollege = form.nearbyCollege;
     if (String(form.totalRooms).trim() !== "") payload.totalRooms = Number(form.totalRooms);
     if (String(form.availableRooms).trim() !== "") payload.availableRooms = Number(form.availableRooms);
 
@@ -204,6 +219,12 @@ export default function EditPG() {
             <input type="number" className={input} placeholder="Total rooms (optional)" value={form.totalRooms} onChange={set("totalRooms")} />
             <input type="number" className={input} placeholder="Available rooms (optional)" value={form.availableRooms} onChange={set("availableRooms")} />
           </div>
+          <select className={input} value={form.nearbyCollege} onChange={set("nearbyCollege")}>
+            <option value="">Nearby college (optional)</option>
+            <option value="Delhi University">Delhi University</option>
+            <option value="Jamia Millia">Jamia Millia</option>
+            <option value="IP University">IP University</option>
+          </select>
 
           <div className="flex flex-wrap gap-6 pt-2">
             {AMENITIES.map((a) => (

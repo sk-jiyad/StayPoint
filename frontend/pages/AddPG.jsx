@@ -76,9 +76,7 @@ export default function AddPG() {
   const submitPG = async () => {
     setError("")
     setSubmitting(true)
-    // Map the wizard fields onto the backend PGCreateDTO. Fields the backend
-    // doesn't model (city, college, gender, room counts, photos, email) are
-    // intentionally not sent.
+    // Map the wizard fields onto the backend PGCreateDTO. (city/email aren't modelled.)
     const payload = {
       name: formData.pgName,
       ownerName: formData.ownerName,
@@ -89,10 +87,14 @@ export default function AddPG() {
       foodProvided: formData.amenities.includes("Food"),
       wifiAvailable: formData.amenities.includes("WiFi"),
       acAvailable: formData.amenities.includes("AC"),
+      laundryAvailable: formData.amenities.includes("Laundry"),
+      parkingAvailable: formData.amenities.includes("Parking"),
+      attachedBathroom: formData.amenities.includes("Attached Bath"),
     }
     if (formData.rentTriple !== "") payload.rentTriple = Number(formData.rentTriple)
     if (formData.imageUrls.length > 0) payload.imageUrls = formData.imageUrls
     payload.gender = formData.gender
+    if (formData.college !== "") payload.nearbyCollege = formData.college
     if (formData.totalRooms !== "") payload.totalRooms = Number(formData.totalRooms)
     if (formData.availableRooms !== "") payload.availableRooms = Number(formData.availableRooms)
 
@@ -309,7 +311,7 @@ export default function AddPG() {
                   ))}
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  Note: WiFi, Food and AC are saved to your listing; the rest are coming soon.
+                  All amenities you tick are saved to your listing and used by search &amp; recommendations.
                 </p>
               </div>
             )}

@@ -67,9 +67,35 @@ export const pgApi = {
   get: (id) => request(`/pgs/${id}`),
   mine: () => request("/pgs/mine"),
   search: (location) => request(`/pgs/search?location=${encodeURIComponent(location)}`),
+  searchByCollege: (college) => request(`/pgs/search?college=${encodeURIComponent(college)}`),
   filter: (minRent, maxRent) =>
     request(`/pgs/filter?minRent=${encodeURIComponent(minRent)}&maxRent=${encodeURIComponent(maxRent)}`),
+  recommend: (params = {}) => {
+    const qs = new URLSearchParams();
+    if (params.budget != null) qs.set("budget", params.budget);
+    if (params.gender) qs.set("gender", params.gender);
+    if (params.college) qs.set("college", params.college);
+    if (params.minRating != null) qs.set("minRating", params.minRating);
+    if (params.limit != null) qs.set("limit", params.limit);
+    (params.amenities || []).forEach((a) => qs.append("amenities", a));
+    return request(`/pgs/recommend?${qs.toString()}`);
+  },
   create: (payload) => request("/pgs", { method: "POST", body: payload }),
   update: (id, payload) => request(`/pgs/${id}`, { method: "PUT", body: payload }),
   remove: (id) => request(`/pgs/${id}`, { method: "DELETE" }),
+};
+
+export const reviewApi = {
+  list: (pgId) => request(`/pgs/${pgId}/reviews`),
+  create: (pgId, payload) => request(`/pgs/${pgId}/reviews`, { method: "POST", body: payload }),
+};
+
+export const adminApi = {
+  listPGs: () => request("/admin/pgs"),
+  verify: (id, value) => request(`/admin/pgs/${id}/verify?value=${value}`, { method: "PUT" }),
+  remove: (id) => request(`/admin/pgs/${id}`, { method: "DELETE" }),
+};
+
+export const chatApi = {
+  send: (message) => request("/chat", { method: "POST", body: { message } }),
 };

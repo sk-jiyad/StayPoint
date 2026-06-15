@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Wifi, UtensilsCrossed, Snowflake, Home, MapPin } from "lucide-react";
+import { Wifi, UtensilsCrossed, Snowflake, Home, MapPin, ShieldCheck, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { pgApi, ApiError } from "../src/lib/api.js";
 
@@ -41,6 +41,10 @@ function toCard(pg) {
     gender: pg.gender || null,
     availableRooms: pg.availableRooms ?? null,
     status: statusFor(pg.availableRooms ?? null),
+    verified: Boolean(pg.verified),
+    avgRating: pg.avgRating ?? null,
+    reviewCount: pg.reviewCount ?? 0,
+    nearbyCollege: pg.nearbyCollege || null,
   };
 }
 
@@ -54,6 +58,7 @@ export default function ExplorePGs() {
   const [rentMax, setRentMax] = useState(50000);
   const [gender, setGender] = useState("all");
   const [vacancyOnly, setVacancyOnly] = useState(false);
+  const [college, setCollege] = useState("all");
 
   useEffect(() => {
     let active = true;
@@ -104,6 +109,10 @@ export default function ExplorePGs() {
       data = data.filter((pg) => pg.status === "vacant" || pg.status === "few");
     }
 
+    if (college !== "all") {
+      data = data.filter((pg) => pg.nearbyCollege === college);
+    }
+
     switch (sortBy) {
       case "Rent (Low→High)":
         data.sort((a, b) => a.rent - b.rent);
@@ -119,7 +128,12 @@ export default function ExplorePGs() {
     }
 
     return data;
-  }, [pgs, searchTerm, rentMax, gender, vacancyOnly, sortBy]);
+  }, [pgs, searchTerm, rentMax, gender, vacancyOnly, college, sortBy]);
+
+  const colleges = useMemo(
+    () => [...new Set(pgs.map((p) => p.nearbyCollege).filter(Boolean))].sort(),
+    [pgs]
+  );
 
   return (
     <div className="min-h-screen w-screen bg-[#FFFEF9] py-12 px-4 md:px-10 lg:px-16">
@@ -137,7 +151,7 @@ export default function ExplorePGs() {
 
         {/* Filter Section */}
         <div className="bg-[#191919] rounded-xl p-6 shadow-lg border border-gray-800">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
             {/* Rent */}
             <div className="min-w-0">
               <label className="block text-white text-sm font-medium mb-2">
@@ -183,6 +197,21 @@ export default function ExplorePGs() {
               </label>
             </div>
 
+            {/* College */}
+            <div className="min-w-0">
+              <label className="block text-white text-sm font-medium mb-2">Near college</label>
+              <select
+                value={college}
+                onChange={(e) => setCollege(e.target.value)}
+                className="w-full px-3 py-2 bg-[#383838] rounded-lg text-white focus:border-green-500 focus:outline-none"
+              >
+                <option value="all">Any college</option>
+                {colleges.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+
             {/* Sort By */}
             <div className="min-w-0">
               <label className="block text-white text-sm font-medium mb-2">Sort By</label>
@@ -226,7 +255,12 @@ export default function ExplorePGs() {
                 <div className="p-5">
                   <div className="flex justify-between items-start mb-2 gap-2">
                     <div className="min-w-0">
-                      <h3 className="text-lg font-semibold text-white">{pg.name}</h3>
+                      <h3 className="text-lg font-semibold text-white flex items-center gap-1.5">
+                        {pg.name}
+                        {pg.verified && (
+                          <ShieldCheck size={15} className="text-[#87E64B] shrink-0" aria-label="Verified" />
+                        )}
+                      </h3>
                       <p className="text-sm text-gray-400 flex items-center gap-1">
                         <MapPin size={14} /> {pg.address}
                       </p>
@@ -240,9 +274,16 @@ export default function ExplorePGs() {
                     )}
                   </div>
 
-                  <p className="text-xl font-bold text-[#87E64B] mb-3">
-                    ₹{pg.rent}/month
-                  </p>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xl font-bold text-[#87E64B]">₹{pg.rent}/month</p>
+                    {pg.avgRating != null && (
+                      <span className="flex items-center gap-1 text-sm text-gray-300">
+                        <Star size={14} className="text-[#87E64B] fill-[#87E64B]" />
+                        {pg.avgRating.toFixed(1)}
+                        <span className="text-gray-500">({pg.reviewCount})</span>
+                      </span>
+                    )}
+                  </div>
 
                   <div className="flex flex-wrap gap-2 mb-4">
                     {pg.amenities.length > 0 ? (
@@ -259,10 +300,11 @@ export default function ExplorePGs() {
                     )}
                   </div>
 
-                  {(pg.gender || pg.availableRooms != null) && (
-                    <div className="flex items-center gap-3 text-sm text-gray-400 mb-4">
+                  {(pg.gender || pg.availableRooms != null || pg.nearbyCollege) && (
+                    <div className="flex items-center gap-3 text-sm text-gray-400 mb-4 flex-wrap">
                       {pg.gender && <span className="capitalize">{pg.gender}</span>}
                       {pg.availableRooms != null && <span>{pg.availableRooms} rooms left</span>}
+                      {pg.nearbyCollege && <span>near {pg.nearbyCollege}</span>}
                     </div>
                   )}
 
