@@ -126,6 +126,14 @@ export default function EditPG() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    if (
+      String(form.totalRooms).trim() !== "" &&
+      String(form.availableRooms).trim() !== "" &&
+      Number(form.availableRooms) > Number(form.totalRooms)
+    ) {
+      setError("Rooms free now can't be more than total rooms.");
+      return;
+    }
     setSaving(true);
     const payload = {
       name: form.name,

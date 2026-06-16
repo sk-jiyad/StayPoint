@@ -76,6 +76,15 @@ export default function AddPG() {
 
   const submitPG = async () => {
     setError("")
+    if (
+      formData.totalRooms !== "" &&
+      formData.availableRooms !== "" &&
+      Number(formData.availableRooms) > Number(formData.totalRooms)
+    ) {
+      setError("Rooms free now can't be more than total rooms.")
+      setStep(2)
+      return
+    }
     setSubmitting(true)
     // Map the wizard fields onto the backend PGCreateDTO. (city/email aren't modelled.)
     const payload = {

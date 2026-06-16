@@ -56,6 +56,7 @@ public class PGService {
         pg.setAttachedBathroom(dto.getAttachedBathroom());
         pg.setVerified(false);
         pg.setOwnerUserId(AuthUtils.currentUserId());
+        validateRooms(pg.getTotalRooms(), pg.getAvailableRooms());
         return pgRepository.save(pg);
     }
 
@@ -88,7 +89,16 @@ public class PGService {
         if (dto.getParkingAvailable() != null) pg.setParkingAvailable(dto.getParkingAvailable());
         if (dto.getAttachedBathroom() != null) pg.setAttachedBathroom(dto.getAttachedBathroom());
 
+        validateRooms(pg.getTotalRooms(), pg.getAvailableRooms());
         return pgRepository.save(pg);
+    }
+
+    // Available rooms can never exceed total rooms (checked on the merged values so
+    // partial updates that touch only one of the two are still caught).
+    private void validateRooms(Integer total, Integer available) {
+        if (total != null && available != null && available > total) {
+            throw new IllegalArgumentException("Available rooms can't exceed total rooms");
+        }
     }
 
     @Transactional
