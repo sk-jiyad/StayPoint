@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Wifi, UtensilsCrossed, Snowflake, Home, MapPin, ShieldCheck, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { pgApi, ApiError } from "../src/lib/api.js";
-import { COLLEGES } from "../src/lib/colleges.js";
 
 const amenityIcons = {
   wifi: <Wifi size={16} />,
@@ -132,7 +131,7 @@ export default function ExplorePGs() {
   }, [pgs, searchTerm, rentMax, gender, vacancyOnly, college, sortBy]);
 
   const colleges = useMemo(
-    () => [...new Set([...pgs.map((p) => p.nearbyCollege).filter(Boolean), ...COLLEGES])].sort(),
+    () => [...new Set(pgs.map((p) => p.nearbyCollege).filter(Boolean))].sort(),
     [pgs]
   );
 
