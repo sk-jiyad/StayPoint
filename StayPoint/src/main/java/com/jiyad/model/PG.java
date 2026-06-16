@@ -27,6 +27,8 @@ public class PG {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String address;
 
+    private String city;
+
     private String landmark;
 
     @Column(nullable = false)
@@ -129,6 +131,14 @@ public class PG {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
     }
 
     public String getLandmark() {

@@ -76,11 +76,17 @@ export default function AddPG() {
 
   const submitPG = async () => {
     setError("")
-    if (
-      formData.totalRooms !== "" &&
-      formData.availableRooms !== "" &&
-      Number(formData.availableRooms) > Number(formData.totalRooms)
-    ) {
+    if (formData.city.trim() === "") {
+      setError("City is required.")
+      setStep(1)
+      return
+    }
+    if (formData.totalRooms === "" || formData.availableRooms === "") {
+      setError("Total rooms and rooms free now are required.")
+      setStep(2)
+      return
+    }
+    if (Number(formData.availableRooms) > Number(formData.totalRooms)) {
       setError("Rooms free now can't be more than total rooms.")
       setStep(2)
       return
@@ -92,6 +98,9 @@ export default function AddPG() {
       ownerName: formData.ownerName,
       contactNumber: formData.phone.trim(),
       address: formData.address,
+      city: formData.city.trim(),
+      totalRooms: Number(formData.totalRooms),
+      availableRooms: Number(formData.availableRooms),
       rentSingle: Number(formData.rentSingle),
       rentDouble: Number(formData.rentDouble),
       foodProvided: formData.amenities.includes("Food"),
@@ -105,8 +114,6 @@ export default function AddPG() {
     if (formData.imageUrls.length > 0) payload.imageUrls = formData.imageUrls
     payload.gender = formData.gender
     if (formData.college !== "") payload.nearbyCollege = formData.college
-    if (formData.totalRooms !== "") payload.totalRooms = Number(formData.totalRooms)
-    if (formData.availableRooms !== "") payload.availableRooms = Number(formData.availableRooms)
 
     try {
       const created = await pgApi.create(payload)
@@ -225,7 +232,7 @@ export default function AddPG() {
                 <input
                   type="text"
                   name="city"
-                  placeholder="City (optional)"
+                  placeholder="City *"
                   value={formData.city}
                   onChange={handleInputChange}
                   className="w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
@@ -281,7 +288,7 @@ export default function AddPG() {
                   <input
                     type="number"
                     name="totalRooms"
-                    placeholder="Total Rooms (optional)"
+                    placeholder="Total Rooms *"
                     value={formData.totalRooms}
                     onChange={handleInputChange}
                     className="w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
@@ -289,7 +296,7 @@ export default function AddPG() {
                   <input
                     type="number"
                     name="availableRooms"
-                    placeholder="Available Rooms (optional)"
+                    placeholder="Available Rooms *"
                     value={formData.availableRooms}
                     onChange={handleInputChange}
                     className="w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"

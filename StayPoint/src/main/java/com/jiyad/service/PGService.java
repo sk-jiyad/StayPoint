@@ -39,6 +39,7 @@ public class PGService {
         pg.setContactNumber(dto.getContactNumber());
         pg.setAlternateContact(dto.getAlternateContact());
         pg.setAddress(dto.getAddress());
+        pg.setCity(dto.getCity());
         pg.setLandmark(dto.getLandmark());
         pg.setRentSingle(dto.getRentSingle());
         pg.setRentDouble(dto.getRentDouble());
@@ -71,6 +72,7 @@ public class PGService {
         if (dto.getOwnerName() != null) pg.setOwnerName(dto.getOwnerName());
         if (dto.getContactNumber() != null) pg.setContactNumber(dto.getContactNumber());
         if (dto.getAddress() != null) pg.setAddress(dto.getAddress());
+        if (dto.getCity() != null) pg.setCity(dto.getCity());
         if (dto.getRentSingle() != null) pg.setRentSingle(dto.getRentSingle());
         if (dto.getRentDouble() != null) pg.setRentDouble(dto.getRentDouble());
         if (dto.getFoodProvided() != null) pg.setFoodProvided(dto.getFoodProvided());

@@ -173,7 +173,7 @@ export default function PGDetails() {
                 )}
               </div>
               <p className="text-gray-400 flex items-center gap-1 mt-1">
-                <MapPin size={16} /> {pg.address}
+                <MapPin size={16} /> {pg.address}{pg.city ? `, ${pg.city}` : ""}
               </p>
               {pg.landmark && (
                 <p className="text-[#87E64B] mt-2 flex items-center gap-1">

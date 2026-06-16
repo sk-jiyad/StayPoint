@@ -21,6 +21,9 @@ public class PGUpdateDTO {
     @Size(min = 10, max = 500)
     private String address;
 
+    @Size(max = 100)
+    private String city;
+
     @Size(max = 200)
     private String landmark;
 
@@ -74,6 +77,9 @@ public class PGUpdateDTO {
 
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
+
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
 
     public BigDecimal getRentSingle() { return rentSingle; }
     public void setRentSingle(BigDecimal rentSingle) { this.rentSingle = rentSingle; }

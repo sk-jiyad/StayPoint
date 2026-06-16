@@ -12,6 +12,7 @@ public class PGResponseDTO {
     private String contactNumber;
     private String alternateContact;
     private String address;
+    private String city;
     private String landmark;
     private BigDecimal rentSingle;
     private BigDecimal rentDouble;
@@ -39,6 +40,7 @@ public class PGResponseDTO {
         dto.contactNumber = pg.getContactNumber();
         dto.alternateContact = pg.getAlternateContact();
         dto.address = pg.getAddress();
+        dto.city = pg.getCity();
         dto.landmark = pg.getLandmark();
         dto.rentSingle = pg.getRentSingle();
         dto.rentDouble = pg.getRentDouble();
@@ -66,6 +68,7 @@ public class PGResponseDTO {
     public String getContactNumber() { return contactNumber; }
     public String getAlternateContact() { return alternateContact; }
     public String getAddress() { return address; }
+    public String getCity() { return city; }
     public String getLandmark() { return landmark; }
     public BigDecimal getRentSingle() { return rentSingle; }
     public BigDecimal getRentDouble() { return rentDouble; }

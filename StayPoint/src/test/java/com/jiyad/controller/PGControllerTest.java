@@ -77,11 +77,14 @@ class PGControllerTest {
         dto.setOwnerName("Tester");
         dto.setContactNumber("1234567890");
         dto.setAddress("123 Some Long Street Name");
+        dto.setCity("Asansol");
         dto.setRentSingle(new BigDecimal("5000"));
         dto.setRentDouble(new BigDecimal("7000"));
         dto.setFoodProvided(true);
         dto.setWifiAvailable(true);
         dto.setAcAvailable(false);
+        dto.setTotalRooms(10);
+        dto.setAvailableRooms(4);
 
         com.jiyad.model.PG saved = new com.jiyad.model.PG();
         saved.setId(1L);

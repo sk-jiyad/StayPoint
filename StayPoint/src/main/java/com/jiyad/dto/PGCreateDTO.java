@@ -25,6 +25,10 @@ public class PGCreateDTO {
     @Size(min = 10, max = 500)
     private String address;
 
+    @NotBlank(message = "City is required")
+    @Size(max = 100)
+    private String city;
+
     @Size(max = 200)
     private String landmark;
 
@@ -57,9 +61,11 @@ public class PGCreateDTO {
     @Pattern(regexp = "boys|girls|coed", message = "Gender must be boys, girls or coed")
     private String gender;
 
+    @NotNull(message = "Total rooms is required")
     @PositiveOrZero
     private Integer totalRooms;
 
+    @NotNull(message = "Available rooms is required")
     @PositiveOrZero
     private Integer availableRooms;
 
@@ -86,6 +92,9 @@ public class PGCreateDTO {
 
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
+
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
 
     public String getLandmark() { return landmark; }
     public void setLandmark(String landmark) { this.landmark = landmark; }

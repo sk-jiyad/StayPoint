@@ -22,6 +22,7 @@ const emptyForm = {
   contactNumber: "",
   alternateContact: "",
   address: "",
+  city: "",
   landmark: "",
   rentSingle: "",
   rentDouble: "",
@@ -66,6 +67,7 @@ export default function EditPG() {
           contactNumber: pg.contactNumber ?? "",
           alternateContact: pg.alternateContact ?? "",
           address: pg.address ?? "",
+          city: pg.city ?? "",
           landmark: pg.landmark ?? "",
           rentSingle: pg.rentSingle ?? "",
           rentDouble: pg.rentDouble ?? "",
@@ -126,11 +128,15 @@ export default function EditPG() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (
-      String(form.totalRooms).trim() !== "" &&
-      String(form.availableRooms).trim() !== "" &&
-      Number(form.availableRooms) > Number(form.totalRooms)
-    ) {
+    if (form.city.trim() === "") {
+      setError("City is required.");
+      return;
+    }
+    if (String(form.totalRooms).trim() === "" || String(form.availableRooms).trim() === "") {
+      setError("Total rooms and rooms free now are required.");
+      return;
+    }
+    if (Number(form.availableRooms) > Number(form.totalRooms)) {
       setError("Rooms free now can't be more than total rooms.");
       return;
     }
@@ -140,6 +146,7 @@ export default function EditPG() {
       ownerName: form.ownerName,
       contactNumber: form.contactNumber.trim(),
       address: form.address,
+      city: form.city.trim(),
       rentSingle: Number(form.rentSingle),
       rentDouble: Number(form.rentDouble),
       foodProvided: form.foodProvided,
@@ -213,6 +220,7 @@ export default function EditPG() {
             <input className={input} placeholder="Alternate Contact (optional)" value={form.alternateContact} onChange={set("alternateContact")} />
           </div>
           <input className={input} placeholder="Address (10-500 chars) *" value={form.address} onChange={set("address")} />
+          <input className={input} placeholder="City *" value={form.city} onChange={set("city")} />
           <input className={input} placeholder="Landmark (optional)" value={form.landmark} onChange={set("landmark")} />
           <div className="grid md:grid-cols-3 gap-4">
             <input type="number" className={input} placeholder="Single rent *" value={form.rentSingle} onChange={set("rentSingle")} />
@@ -225,8 +233,8 @@ export default function EditPG() {
               <option value="girls">Girls</option>
               <option value="coed">Co-ed</option>
             </select>
-            <input type="number" className={input} placeholder="Total rooms (optional)" value={form.totalRooms} onChange={set("totalRooms")} />
-            <input type="number" className={input} placeholder="Available rooms (optional)" value={form.availableRooms} onChange={set("availableRooms")} />
+            <input type="number" className={input} placeholder="Total rooms *" value={form.totalRooms} onChange={set("totalRooms")} />
+            <input type="number" className={input} placeholder="Rooms free now *" value={form.availableRooms} onChange={set("availableRooms")} />
           </div>
           <CollegeField
             value={form.nearbyCollege}
