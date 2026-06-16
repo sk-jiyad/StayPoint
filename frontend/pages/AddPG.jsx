@@ -6,7 +6,7 @@ import { Upload } from "lucide-react"
 import { useAuth } from "../src/lib/auth.jsx"
 import { pgApi, ApiError } from "../src/lib/api.js"
 import { uploadImage } from "../src/lib/cloudinary.js"
-import { COLLEGES } from "../src/lib/colleges.js"
+import CollegeField from "../components/CollegeField.jsx"
 
 export default function AddPG() {
   const navigate = useNavigate()
@@ -221,21 +221,12 @@ export default function AddPG() {
                   onChange={handleInputChange}
                   className="w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
                 />
-                <input
-                  type="text"
-                  name="college"
-                  list="india-colleges"
-                  autoComplete="off"
-                  placeholder="Nearby college — search or type your own (optional)"
+                <CollegeField
                   value={formData.college}
-                  onChange={handleInputChange}
+                  onChange={(v) => setFormData((f) => ({ ...f, college: v }))}
+                  placeholder="Nearby college — search or type your own (optional)"
                   className="w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
                 />
-                <datalist id="india-colleges">
-                  {COLLEGES.map((c) => (
-                    <option key={c} value={c} />
-                  ))}
-                </datalist>
               </div>
             )}
 

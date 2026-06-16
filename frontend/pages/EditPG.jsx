@@ -5,7 +5,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../src/lib/auth.jsx";
 import { pgApi, ApiError } from "../src/lib/api.js";
 import { uploadImage } from "../src/lib/cloudinary.js";
-import { COLLEGES } from "../src/lib/colleges.js";
+import CollegeField from "../components/CollegeField.jsx";
 
 const AMENITIES = [
   { key: "wifiAvailable", label: "WiFi" },
@@ -220,19 +220,12 @@ export default function EditPG() {
             <input type="number" className={input} placeholder="Total rooms (optional)" value={form.totalRooms} onChange={set("totalRooms")} />
             <input type="number" className={input} placeholder="Available rooms (optional)" value={form.availableRooms} onChange={set("availableRooms")} />
           </div>
-          <input
-            className={input}
-            list="india-colleges"
-            autoComplete="off"
-            placeholder="Nearby college — search or type your own (optional)"
+          <CollegeField
             value={form.nearbyCollege}
-            onChange={set("nearbyCollege")}
+            onChange={(v) => setForm((f) => ({ ...f, nearbyCollege: v }))}
+            placeholder="Nearby college — search or type your own (optional)"
+            className={input}
           />
-          <datalist id="india-colleges">
-            {COLLEGES.map((c) => (
-              <option key={c} value={c} />
-            ))}
-          </datalist>
 
           <div className="flex flex-wrap gap-6 pt-2">
             {AMENITIES.map((a) => (
