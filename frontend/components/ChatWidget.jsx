@@ -32,10 +32,15 @@ export default function ChatWidget() {
     const message = (text ?? input).trim();
     if (!message || loading) return;
     setInput("");
+    // Prior turns (before this message) give the bot multi-turn context.
+    const history = messages.slice(-8).map((m) => ({
+      role: m.from === "user" ? "user" : "model",
+      text: m.text,
+    }));
     setMessages((m) => [...m, { from: "user", text: message, pgs: [] }]);
     setLoading(true);
     try {
-      const res = await chatApi.send(message);
+      const res = await chatApi.send(message, history);
       setMessages((m) => [...m, { from: "bot", text: res.reply, pgs: res.pgs || [] }]);
     } catch {
       setMessages((m) => [

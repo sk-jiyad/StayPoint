@@ -97,5 +97,6 @@ export const adminApi = {
 };
 
 export const chatApi = {
-  send: (message) => request("/chat", { method: "POST", body: { message } }),
+  // history: prior turns [{ role: "user" | "model", text }] for multi-turn context
+  send: (message, history = []) => request("/chat", { method: "POST", body: { message, history } }),
 };

@@ -1,5 +1,7 @@
 package com.jiyad.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jiyad.dto.ChatResponse;
 import com.jiyad.dto.PGResponseDTO;
 import com.jiyad.model.PG;
@@ -7,13 +9,16 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Rule-based chatbot (report §4.2): detects intent from keywords/regex, answers FAQs from a
- * static knowledge base, and for recommendation requests parses budget/gender/amenities/college/
- * rating out of the message and delegates to {@link RecommendationService}. No LLM.
+ * Chatbot service. When a Gemini API key is configured it uses the LLM (natural language,
+ * multi-turn) and lets the model decide when to call the recommendation engine via a structured
+ * JSON response. When the key is absent — or Gemini errors / rate-limits — it falls back to the
+ * original rule-based logic (intent detection + FAQ knowledge base + regex parsing). The recommend
+ * results always come from the real {@link RecommendationService}; the LLM never invents listings.
  */
 @Service
 public class ChatService {
@@ -24,13 +29,129 @@ public class ChatService {
     private static final Pattern LIMIT = Pattern.compile("top\\s+(\\d{1,2})|(\\d{1,2})\\s+(?:best|options|pgs?|places|rooms)");
     private static final Pattern STARS = Pattern.compile("(\\d)\\s*star");
 
-    private final RecommendationService recommendationService;
+    private static final String SYSTEM = """
+        You are the StayPoint assistant. StayPoint is a website that lists paying-guest (PG)
+        accommodations across India: owners post listings and students/workers browse, filter and
+        contact owners directly. StayPoint takes no commission and does not handle bookings.
+        Facts you may use to answer questions:
+        - A PG (Paying Guest) is a rented room (single/double/triple-sharing) in a house or hostel,
+          usually monthly, often with WiFi and sometimes food included.
+        - Documents to move in: a government photo ID (Aadhaar/PAN), passport photos, college or
+          employee ID, and an advance deposit (typically 1-2 months' rent).
+        - Typical house rules: gate/entry timings, no smoking or alcohol, guests only in common
+          areas, keeping noise down - varies by owner.
+        - Notice period: usually 15-30 days; the deposit is refunded minus any dues/damages.
+        - A "Verified" badge means a StayPoint admin checked the listing - a trust signal, not a
+          guarantee; always visit before paying.
+        How to respond (always return the JSON schema):
+        - If the user wants PG suggestions/recommendations (mentions a budget, gender, amenities, a
+          college, or asks to find/suggest/show PGs), set action="recommend" and fill the filters you
+          can infer: budget (a number), gender (boys/girls/coed), amenities (from wifi, food, ac,
+          laundry, parking, bath), college (name), minRating (1-5 if they want highly rated), limit
+          (if they ask for a count). Put a short friendly sentence in "reply" introducing the results.
+          Do NOT invent specific PGs - the system fills them in from the real database.
+        - Otherwise set action="answer" and put your complete, helpful answer in "reply".
+        - Be concise and friendly. Use the conversation history for context (e.g. "with AC too" adds
+          to the previous request's filters).
+        """;
 
-    public ChatService(RecommendationService recommendationService) {
+    private final RecommendationService recommendationService;
+    private final GeminiClient geminiClient;
+    private final ObjectMapper mapper = new ObjectMapper();
+
+    public ChatService(RecommendationService recommendationService, GeminiClient geminiClient) {
         this.recommendationService = recommendationService;
+        this.geminiClient = geminiClient;
     }
 
+    /** Single-turn entry point (no history) — kept for callers/tests. */
     public ChatResponse reply(String rawMessage) {
+        return reply(rawMessage, List.of());
+    }
+
+    /** Main entry point: LLM when configured, otherwise (or on any error) the rule-based fallback. */
+    public ChatResponse reply(String message, List<Map<String, String>> history) {
+        if (message == null || message.isBlank()) {
+            return ChatResponse.text("Tell me your budget and what you're looking for, or ask me a question about PGs.");
+        }
+        if (!geminiClient.isEnabled()) {
+            return ruleBasedReply(message);
+        }
+        try {
+            return llmReply(message, history == null ? List.of() : history);
+        } catch (Exception e) {
+            return ruleBasedReply(message);
+        }
+    }
+
+    // --- LLM path (Gemini) ---
+
+    private ChatResponse llmReply(String message, List<Map<String, String>> history) throws Exception {
+        List<Map<String, Object>> contents = new ArrayList<>();
+        for (Map<String, String> turn : history) {
+            String role = "user".equalsIgnoreCase(turn.get("role")) ? "user" : "model";
+            String text = turn.get("text");
+            if (text != null && !text.isBlank()) {
+                contents.add(Map.of("role", role, "parts", List.of(Map.of("text", text))));
+            }
+        }
+        contents.add(Map.of("role", "user", "parts", List.of(Map.of("text", message))));
+
+        Map<String, Object> genConfig = Map.of(
+            "temperature", 0.4,
+            "responseMimeType", "application/json",
+            "responseSchema", responseSchema()
+        );
+
+        JsonNode node = mapper.readTree(geminiClient.complete(SYSTEM, contents, genConfig));
+        String action = node.path("action").asText("answer");
+        String replyText = node.path("reply").asText("");
+
+        if ("recommend".equalsIgnoreCase(action)) {
+            Integer budget = node.hasNonNull("budget") ? node.get("budget").asInt() : null;
+            String gender = node.hasNonNull("gender") ? node.get("gender").asText() : null;
+            String college = node.hasNonNull("college") ? node.get("college").asText() : null;
+            Double minRating = node.hasNonNull("minRating") ? node.get("minRating").asDouble() : null;
+            int limit = node.hasNonNull("limit") ? node.get("limit").asInt() : 3;
+            List<String> amenities = new ArrayList<>();
+            if (node.path("amenities").isArray()) {
+                node.path("amenities").forEach(a -> amenities.add(a.asText()));
+            }
+            List<PG> pgs = recommendationService.recommend(budget, gender, amenities, college, minRating, limit);
+            if (replyText.isBlank()) {
+                replyText = pgs.isEmpty()
+                    ? "I couldn't find any PGs matching that. Try widening your budget or dropping a filter."
+                    : "Here are some options that match:";
+            }
+            return new ChatResponse(replyText, pgs.stream().map(PGResponseDTO::from).toList());
+        }
+
+        if (replyText.isBlank()) {
+            replyText = "Sorry, could you rephrase that? I can recommend PGs or answer questions about them.";
+        }
+        return ChatResponse.text(replyText);
+    }
+
+    private Map<String, Object> responseSchema() {
+        return Map.of(
+            "type", "OBJECT",
+            "properties", Map.of(
+                "action", Map.of("type", "STRING", "enum", List.of("recommend", "answer")),
+                "reply", Map.of("type", "STRING"),
+                "budget", Map.of("type", "INTEGER"),
+                "gender", Map.of("type", "STRING"),
+                "amenities", Map.of("type", "ARRAY", "items", Map.of("type", "STRING")),
+                "college", Map.of("type", "STRING"),
+                "minRating", Map.of("type", "NUMBER"),
+                "limit", Map.of("type", "INTEGER")
+            ),
+            "required", List.of("action", "reply")
+        );
+    }
+
+    // --- Rule-based fallback (used when Gemini is off or fails) ---
+
+    private ChatResponse ruleBasedReply(String rawMessage) {
         String msg = rawMessage == null ? "" : rawMessage.trim().toLowerCase();
         if (msg.isBlank()) {
             return ChatResponse.text("Tell me your budget and what you're looking for, or ask me a question about PGs.");

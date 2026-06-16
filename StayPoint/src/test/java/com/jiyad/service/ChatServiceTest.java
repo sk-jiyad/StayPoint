@@ -21,6 +21,9 @@ class ChatServiceTest {
     @Mock
     private RecommendationService recommendationService;
 
+    @Mock
+    private GeminiClient geminiClient;
+
     @InjectMocks
     private ChatService chatService;
 
@@ -69,5 +72,15 @@ class ChatServiceTest {
         ChatResponse r = chatService.reply("tell me a joke about cricket");
         assertTrue(r.pgs().isEmpty());
         assertTrue(r.reply().toLowerCase().contains("not sure"));
+    }
+
+    @Test
+    void fallsBackToRuleBasedWhenGeminiErrors() throws Exception {
+        when(geminiClient.isEnabled()).thenReturn(true);
+        when(geminiClient.complete(any(), anyList(), anyMap())).thenThrow(new RuntimeException("boom"));
+
+        ChatResponse r = chatService.reply("what is pg");
+
+        assertTrue(r.reply().contains("Paying Guest"));
     }
 }
