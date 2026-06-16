@@ -118,10 +118,13 @@ public class ChatService {
                 node.path("amenities").forEach(a -> amenities.add(a.asText()));
             }
             List<PG> pgs = recommendationService.recommend(budget, gender, amenities, college, minRating, limit);
-            if (replyText.isBlank()) {
-                replyText = pgs.isEmpty()
-                    ? "I couldn't find any PGs matching that. Try widening your budget or dropping a filter."
-                    : "Here are some options that match:";
+            if (pgs.isEmpty()) {
+                // The model writes its intro before the engine runs, so override it when there are
+                // no matches — otherwise it says "here are some" with nothing to show.
+                replyText = "I couldn't find any PGs matching that. Try widening your budget or "
+                    + "dropping a filter (for example, ask without the college or an amenity).";
+            } else if (replyText.isBlank()) {
+                replyText = "Here are some options that match:";
             }
             return new ChatResponse(replyText, pgs.stream().map(PGResponseDTO::from).toList());
         }
