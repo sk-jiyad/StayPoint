@@ -5,6 +5,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../src/lib/auth.jsx";
 import { pgApi, ApiError } from "../src/lib/api.js";
 import { uploadImage } from "../src/lib/cloudinary.js";
+import { COLLEGES } from "../src/lib/colleges.js";
 
 const AMENITIES = [
   { key: "wifiAvailable", label: "WiFi" },
@@ -219,12 +220,19 @@ export default function EditPG() {
             <input type="number" className={input} placeholder="Total rooms (optional)" value={form.totalRooms} onChange={set("totalRooms")} />
             <input type="number" className={input} placeholder="Available rooms (optional)" value={form.availableRooms} onChange={set("availableRooms")} />
           </div>
-          <select className={input} value={form.nearbyCollege} onChange={set("nearbyCollege")}>
-            <option value="">Nearby college (optional)</option>
-            <option value="Delhi University">Delhi University</option>
-            <option value="Jamia Millia">Jamia Millia</option>
-            <option value="IP University">IP University</option>
-          </select>
+          <input
+            className={input}
+            list="india-colleges"
+            autoComplete="off"
+            placeholder="Nearby college — search or type your own (optional)"
+            value={form.nearbyCollege}
+            onChange={set("nearbyCollege")}
+          />
+          <datalist id="india-colleges">
+            {COLLEGES.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
 
           <div className="flex flex-wrap gap-6 pt-2">
             {AMENITIES.map((a) => (
