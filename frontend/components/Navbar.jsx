@@ -1,133 +1,100 @@
 "use client"
 
-import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { Menu, X } from "lucide-react"
-import { useAuth } from "../src/lib/auth.jsx"
+import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
+import { Menu, X, ArrowUpRight } from "lucide-react"
+
+const INK = "#15170F"
+const PAPER = "#F4F1EA"
+const GREEN = "#4F7B1E"
+const LINE = "rgba(21,23,15,0.12)"
+
+const navLinks = [
+  { label: "Explore", to: "/explore" },
+  { label: "Add PG", to: "/add-pg" },
+]
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
-  const navigate = useNavigate()
-  const { isAuthenticated, isOwner, user, logout } = useAuth()
+  const [scrolled, setScrolled] = useState(false)
 
-  const handleLogout = () => {
-    logout()
-    setIsOpen(false)
-    navigate("/")
-  }
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20)
+    handleScroll()
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   return (
-    <nav className="sticky top-0 z-50 bg-[#191919] border-b border-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group no-underline">
-            <img src="/logo.svg" alt="StayPoint Logo" className="w-40" />
+    <header
+      className="fixed top-0 inset-x-0 z-50 transition-all duration-300"
+      style={{
+        background: scrolled ? "rgba(244,241,234,0.95)" : "rgba(255,255,255,0.02)",
+        backdropFilter: scrolled ? "blur(12px)" : "none",
+        borderBottom: scrolled ? `1px solid ${LINE}` : "1px solid transparent",
+      }}
+    >
+      <div className="max-w-[1280px] mx-auto px-6 md:px-10 h-16 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2.5">
+          <img src="/logo sp.svg" alt="StayPoint" className="h-36 w-36" />
+        </Link>
+
+        <nav className="hidden md:flex items-center gap-8 ff-mono uppercase tracking-[0.15em]" style={{ fontSize: "0.72rem" }}>
+          {navLinks.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              className="opacity-70 hover:opacity-100 transition-opacity"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-3">
+          <Link
+            to="/signup"
+            className="group ff-mono uppercase tracking-[0.15em] hidden md:inline-flex items-center gap-2 px-4 py-2.5 transition-colors"
+            style={{ fontSize: "0.72rem", background: INK, color: PAPER }}
+          >
+            Get started
+            <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </Link>
 
-          {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-8">
-            <Link to="/" className="text-white hover:text-[#87E64B] transition no-underline">
-              Home
-            </Link>
-            <Link to="/explore" className="text-white hover:text-[#87E64B] transition no-underline">
-              Explore PGs
-            </Link>
-            {isOwner && (
-              <Link to="/add-pg" className="text-white hover:text-[#87E64B] transition no-underline">
-                Add Your PG
-              </Link>
-            )}
-            {isOwner && (
-              <Link to="/my-listings" className="text-white hover:text-[#87E64B] transition no-underline">
-                My Listings
-              </Link>
-            )}
-          </div>
-
-          {/* Auth Buttons */}
-          <div className="hidden md:flex items-center gap-3">
-            {isAuthenticated ? (
-              <>
-                <span className="text-gray-400 text-sm max-w-[180px] truncate">{user?.email}</span>
-                <button
-                  onClick={handleLogout}
-                  className="px-4 py-2 bg-[#87E64B] text-black rounded-md transition font-medium"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="px-4 py-2 text-white bg-[#383838] rounded-md hover:border-green-500 transition no-underline"
-                >
-                  Signup
-                </Link>
-                <Link
-                  to="/login"
-                  className="px-4 py-2 bg-[#87E64B] text-black rounded-md hover:bg-[#87E64B] transition font-medium no-underline"
-                >
-                  Login
-                </Link>
-              </>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button className="md:hidden text-white" onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-900 shadow-sm transition hover:bg-slate-50 focus:outline-none md:hidden"
+            onClick={() => setIsOpen((prev) => !prev)}
+            aria-label={isOpen ? "Close menu" : "Open menu"}
+          >
+            {isOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
-
-        {/* Mobile Menu */}
-        {isOpen && (
-          <div className="md:hidden pb-4 border-t border-gray-800">
-            <Link to="/" className="block px-4 py-2 text-white hover:text-green-500 no-underline">
-              Home
-            </Link>
-            <Link to="/explore" className="block px-4 py-2 text-white hover:text-green-500 no-underline">
-              Explore PGs
-            </Link>
-            {isOwner && (
-              <Link to="/add-pg" className="block px-4 py-2 text-white hover:text-green-500 no-underline">
-                Add Your PG
-              </Link>
-            )}
-            {isOwner && (
-              <Link to="/my-listings" className="block px-4 py-2 text-white hover:text-green-500 no-underline">
-                My Listings
-              </Link>
-            )}
-            <div className="flex gap-2 px-4 py-2 mt-2">
-              {isAuthenticated ? (
-                <button
-                  onClick={handleLogout}
-                  className="flex-1 px-3 py-2 text-center bg-[#87E64B] text-black rounded-md text-sm font-medium"
-                >
-                  Logout ({user?.email})
-                </button>
-              ) : (
-                <>
-                  <Link
-                    to="/login"
-                    className="flex-1 px-3 py-2 text-center bg-black text-[#87E64B] border-2 rounded-md text-sm no-underline"
-                  >
-                    Signup
-                  </Link>
-                  <Link
-                    to="/login"
-                    className="flex-1 px-3 py-2 text-center bg-[#87E64B] text-black rounded-md text-sm font-medium no-underline"
-                  >
-                    Login
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </div>
-    </nav>
+
+      {isOpen && (
+        <div className="md:hidden border-t border-slate-200 bg-white/95 backdrop-blur-sm shadow-sm">
+          <nav className="flex flex-col gap-3 px-6 py-4">
+            {navLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className="rounded-lg px-3 py-3 text-sm uppercase tracking-[0.12em] text-slate-900 hover:bg-slate-100 transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <Link
+              to="/signup"
+              className="mt-2 inline-flex items-center justify-center rounded-lg bg-black px-4 py-3 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-slate-900"
+              onClick={() => setIsOpen(false)}
+            >
+              Get started
+            </Link>
+          </nav>
+        </div>
+      )}
+    </header>
   )
 }
