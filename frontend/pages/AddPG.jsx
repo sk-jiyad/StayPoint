@@ -1,45 +1,56 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useNavigate, Link } from "react-router-dom"
-import { Upload } from "lucide-react"
-import { useAuth } from "../src/lib/auth.jsx"
-import { pgApi, ApiError } from "../src/lib/api.js"
-import { uploadImage } from "../src/lib/cloudinary.js"
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Upload, ArrowRight, ArrowLeft, Check, Plus, Trash2, X } from "lucide-react";
+import { useAuth } from "../src/lib/auth.jsx";
+import { pgApi, ApiError } from "../src/lib/api.js";
+import { uploadImage } from "../src/lib/cloudinary.js";
+
+/* Brand constants matching UI theme */
+const INK = "#15170F";
+const PAPER = "#F4F1EA";
+const PANEL = "#FBFAF5";
+const GREEN = "#4F7B1E";
+const LINE = "rgba(21,23,15,0.12)";
 
 export default function AddPG() {
-  const navigate = useNavigate()
-  const { isAuthenticated, isOwner } = useAuth()
+  const navigate = useNavigate();
+  const { isAuthenticated, isOwner } = useAuth();
 
-  const [step, setStep] = useState(1)
-  const [submitted, setSubmitted] = useState(false)
-  const [createdId, setCreatedId] = useState(null)
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState("")
-  const [uploading, setUploading] = useState(false)
-  const [uploadError, setUploadError] = useState("")
+  const [step, setStep] = useState(1);
+  const [submitted, setSubmitted] = useState(false);
+  const [createdId, setCreatedId] = useState(null);
+  
+  // Backend States
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
   const [formData, setFormData] = useState({
     pgName: "",
     address: "",
     city: "",
     college: "",
-    rentSingle: "",
-    rentDouble: "",
-    rentTriple: "",
     gender: "boys",
+    sharingOptions: [{ type: "Single", rent: "" }], // Replaces rentSingle/Double
     totalRooms: "",
     availableRooms: "",
     amenities: [],
     ownerName: "",
     phone: "",
     email: "",
-    imageUrls: [],
-  })
+    imageUrls: [], // For Cloudinary
+  });
 
+  const amenitiesList = ["WiFi", "Food", "AC", "Laundry", "Parking", "Attached Bath"];
+
+  // --- Handlers ---
   const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData({ ...formData, [name]: value })
-  }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleAmenityChange = (amenity) => {
     setFormData((prev) => ({
@@ -47,373 +58,301 @@ export default function AddPG() {
       amenities: prev.amenities.includes(amenity)
         ? prev.amenities.filter((a) => a !== amenity)
         : [...prev.amenities, amenity],
-    }))
-  }
+    }));
+  };
 
+  const addSharingOption = () => {
+    setFormData((prev) => ({
+      ...prev,
+      sharingOptions: [...prev.sharingOptions, { type: "Single", rent: "" }],
+    }));
+  };
+
+  const updateSharingOption = (index, field, value) => {
+    const newOptions = [...formData.sharingOptions];
+    newOptions[index][field] = value;
+    setFormData({ ...formData, sharingOptions: newOptions });
+  };
+
+  const removeSharingOption = (index) => {
+    setFormData({
+      ...formData,
+      sharingOptions: formData.sharingOptions.filter((_, i) => i !== index),
+    });
+  };
+
+  // --- Cloudinary Upload Logic ---
   const handleFiles = async (e) => {
-    const files = Array.from(e.target.files || [])
-    if (files.length === 0) return
-    setUploadError("")
-    setUploading(true)
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    setUploadError("");
+    setUploading(true);
+    
     try {
-      const urls = []
+      const urls = [];
       for (const file of files) {
-        urls.push(await uploadImage(file))
+        urls.push(await uploadImage(file));
       }
-      setFormData((f) => ({ ...f, imageUrls: [...f.imageUrls, ...urls] }))
+      setFormData((f) => ({ ...f, imageUrls: [...f.imageUrls, ...urls] }));
     } catch (err) {
-      setUploadError(err.message || "Upload failed")
+      setUploadError(err.message || "Upload failed");
     } finally {
-      setUploading(false)
-      e.target.value = ""
+      setUploading(false);
+      e.target.value = "";
     }
-  }
+  };
 
   const removeImage = (url) => {
-    setFormData((f) => ({ ...f, imageUrls: f.imageUrls.filter((u) => u !== url) }))
-  }
+    setFormData((f) => ({ ...f, imageUrls: f.imageUrls.filter((u) => u !== url) }));
+  };
 
+  // --- Submission Logic ---
   const submitPG = async () => {
-    setError("")
-    setSubmitting(true)
-    // Map the wizard fields onto the backend PGCreateDTO. Fields the backend
-    // doesn't model (city, college, gender, room counts, photos, email) are
-    // intentionally not sent.
+    setError("");
+    setSubmitting(true);
+
+    // Helper to extract rent from dynamic sharing options array for the backend payload
+    const getRent = (type) => {
+      const opt = formData.sharingOptions.find(o => o.type === type);
+      return opt && opt.rent ? Number(opt.rent) : 0;
+    };
+
     const payload = {
       name: formData.pgName,
       ownerName: formData.ownerName,
       contactNumber: formData.phone.trim(),
       address: formData.address,
-      rentSingle: Number(formData.rentSingle),
-      rentDouble: Number(formData.rentDouble),
+      rentSingle: getRent("Single"),
+      rentDouble: getRent("Double"),
       foodProvided: formData.amenities.includes("Food"),
       wifiAvailable: formData.amenities.includes("WiFi"),
       acAvailable: formData.amenities.includes("AC"),
-    }
-    if (formData.rentTriple !== "") payload.rentTriple = Number(formData.rentTriple)
-    if (formData.imageUrls.length > 0) payload.imageUrls = formData.imageUrls
-    payload.gender = formData.gender
-    if (formData.totalRooms !== "") payload.totalRooms = Number(formData.totalRooms)
-    if (formData.availableRooms !== "") payload.availableRooms = Number(formData.availableRooms)
+      gender: formData.gender,
+    };
+
+    const tripleRent = getRent("Triple");
+    if (tripleRent > 0) payload.rentTriple = tripleRent;
+    if (formData.imageUrls.length > 0) payload.imageUrls = formData.imageUrls;
+    if (formData.totalRooms !== "") payload.totalRooms = Number(formData.totalRooms);
+    if (formData.availableRooms !== "") payload.availableRooms = Number(formData.availableRooms);
 
     try {
-      const created = await pgApi.create(payload)
-      setCreatedId(created.id)
-      setSubmitted(true)
+      const created = await pgApi.create(payload);
+      setCreatedId(created.id);
+      setSubmitted(true);
     } catch (err) {
       if (err instanceof ApiError) {
-        const firstFieldError = err.errors ? Object.values(err.errors)[0] : null
-        setError(firstFieldError || err.message)
+        const firstFieldError = err.errors ? Object.values(err.errors)[0] : null;
+        setError(firstFieldError || err.message);
       } else {
-        setError("Could not reach the server. Is the backend running?")
+        setError("Could not reach the server. Is the backend running?");
       }
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   const handleSubmit = (e) => {
-    e.preventDefault()
+    e.preventDefault();
     if (step < 5) {
-      setStep(step + 1)
+      setStep(step + 1);
     } else {
-      submitPG()
+      submitPG();
     }
-  }
+  };
 
-  const amenities = ["WiFi", "Food", "AC", "Laundry", "Parking", "Attached Bath"]
-
-  // --- Auth gate: only logged-in PG owners may create a listing ---
+  // --- Auth Gate (Styled for UI) ---
   if (!isAuthenticated || !isOwner) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4">
-        <div className="text-center max-w-md">
-          <h2 className="text-2xl font-bold text-white mb-2">Owners only</h2>
-          <p className="text-gray-400 mb-6">
+      <div className="min-h-screen flex items-center justify-center p-6 grain" style={{ background: PAPER, color: INK }}>
+        <div className="text-center max-w-sm p-10" style={{ background: PANEL, border: `1px solid ${LINE}` }}>
+          <h2 className="ff-display text-3xl mb-4">Owners Only</h2>
+          <p className="ff-mono text-sm mb-8" style={{ color: "#6B6A5C", lineHeight: 1.6 }}>
             {isAuthenticated
               ? "Your account isn't a PG Owner account, so you can't list a PG."
-              : "Please log in as a PG Owner to list a PG."}
+              : "Please log in as a PG Owner to list a PG on StayPoint."}
           </p>
-          <Link
-            to="/login"
-            className="px-6 py-2 bg-green-500 text-black rounded-lg hover:bg-green-600 transition font-semibold"
-          >
-            {isAuthenticated ? "Switch account" : "Login / Sign up"}
+          <Link to="/login" className="inline-block w-full py-4 ff-mono uppercase tracking-[0.15em] text-xs" style={{ background: INK, color: PAPER }}>
+            {isAuthenticated ? "Switch Account" : "Login / Sign up"}
           </Link>
         </div>
       </div>
-    )
+    );
   }
 
+  // --- Success Screen (Styled for UI) ---
   if (submitted) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+      <div className="min-h-screen flex items-center justify-center p-6 grain" style={{ background: PAPER, color: INK }}>
+        <div className="text-center max-w-md p-10">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: GREEN }}>
+            <Check className="w-8 h-8" style={{ color: PAPER }} />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Listing Created!</h2>
-          <p className="text-gray-400 mb-6">Your PG is now live on StayPoint.</p>
-          <div className="flex gap-3 justify-center">
-            <button
-              onClick={() => navigate(`/pg/${createdId}`)}
-              className="px-6 py-2 bg-green-500 text-black rounded-lg hover:bg-green-600 transition font-semibold"
-            >
+          <h2 className="ff-display text-4xl mb-3">Listing Created!</h2>
+          <p className="ff-mono text-sm mb-10" style={{ color: "#6B6A5C" }}>Your PG is now live on StayPoint.</p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button onClick={() => navigate(`/pg/${createdId}`)} className="px-8 py-4 ff-mono uppercase tracking-[0.15em] text-xs" style={{ background: GREEN, color: PAPER }}>
               View Listing
             </button>
-            <button
-              onClick={() => navigate("/explore")}
-              className="px-6 py-2 border border-gray-600 text-white rounded-lg hover:bg-gray-800 transition font-semibold"
-            >
+            <button onClick={() => navigate("/explore")} className="px-8 py-4 ff-mono uppercase tracking-[0.15em] text-xs border" style={{ borderColor: LINE, color: INK }}>
               Explore PGs
             </button>
           </div>
         </div>
       </div>
-    )
+    );
   }
 
+  // --- Main Form Render ---
   return (
-    <div className="w-screen min-h-screen bg-background py-12 px-6 overflow-x-hidden">
-      <div className="w-full">
+    <div className="min-h-screen py-20 px-6 grain" style={{ background: PAPER, color: INK }}>
+      <style>{`
+        .ff-display { font-family: var(--font-display); }
+        .ff-mono { font-family: var(--font-mono); }
+        .grain { background-image: radial-gradient(${GREEN}14 0.5px, transparent 0.5px); background-size: 18px 18px; }
+      `}</style>
+
+      <div className="max-w-[700px] mx-auto">
+        
         {/* Progress Bar */}
-        <div className="mb-10 px-8">
-          <div className="flex justify-between mb-2">
+        <div className="mb-12">
+          <div className="flex justify-between mb-3">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className={`h-1 flex-1 mx-1 rounded ${i <= step ? "bg-green-500" : "bg-gray-700"}`} />
+              <div key={i} className={`h-1 flex-1 mx-1 ${i <= step ? "opacity-100" : "opacity-20"}`} style={{ background: GREEN }} />
             ))}
           </div>
-          <p className="text-gray-400 text-sm">Step {step} of 5</p>
+          <p className="ff-mono uppercase tracking-[0.2em]" style={{ fontSize: "0.65rem", color: "#6B6A5C" }}>Step {step} of 5</p>
         </div>
 
-        <div className="bg-gray-900 rounded-2xl p-10 shadow-lg mx-8">
-          <form onSubmit={handleSubmit} className="w-full">
-            {/* Step 1: Basic Info */}
-            {step === 1 && (
-              <div className="space-y-4">
-                <h2 className="text-3xl font-bold text-white mb-6">Basic Information</h2>
-                <input
-                  type="text"
-                  name="pgName"
-                  placeholder="PG Name"
-                  value={formData.pgName}
-                  onChange={handleInputChange}
-                  className="w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
-                />
-                <input
-                  type="text"
-                  name="address"
-                  placeholder="Address (at least 10 characters)"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  className="w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
-                />
-                <input
-                  type="text"
-                  name="city"
-                  placeholder="City (optional)"
-                  value={formData.city}
-                  onChange={handleInputChange}
-                  className="w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
-                />
-                <select
-                  name="college"
-                  value={formData.college}
-                  onChange={handleInputChange}
-                  className="w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 focus:outline-none"
-                >
-                  <option value="">Select Nearby College (optional)</option>
-                  <option value="Delhi University">Delhi University</option>
-                  <option value="Jamia Millia">Jamia Millia</option>
-                  <option value="IP University">IP University</option>
-                </select>
-              </div>
-            )}
+        <div className="p-8 md:p-12" style={{ background: PANEL, border: `1px solid ${LINE}` }}>
+          <form onSubmit={handleSubmit}>
+            <div className="min-h-[350px]">
+              
+              {/* Step 1 */}
+              {step === 1 && (
+                <div className="space-y-6">
+                  <h2 className="ff-display text-4xl mb-8">Basic Information</h2>
+                  <input type="text" name="pgName" placeholder="PG Name *" required value={formData.pgName} onChange={handleInputChange} className="w-full p-4 outline-none" style={{ background: PAPER, border: `1px solid ${LINE}` }} />
+                  <input type="text" name="address" placeholder="Full Address *" required value={formData.address} onChange={handleInputChange} className="w-full p-4 outline-none" style={{ background: PAPER, border: `1px solid ${LINE}` }} />
+                  <input type="text" name="city" placeholder="City" value={formData.city} onChange={handleInputChange} className="w-full p-4 outline-none" style={{ background: PAPER, border: `1px solid ${LINE}` }} />
+                </div>
+              )}
 
-            {/* Step 2: Room Details */}
-            {step === 2 && (
-              <div className="space-y-4">
-                <h2 className="text-3xl font-bold text-white mb-6">Room Details</h2>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <input
-                    type="number"
-                    name="rentSingle"
-                    placeholder="Single room rent (₹) *"
-                    value={formData.rentSingle}
-                    onChange={handleInputChange}
-                    className="w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
-                  />
-                  <input
-                    type="number"
-                    name="rentDouble"
-                    placeholder="Double room rent (₹) *"
-                    value={formData.rentDouble}
-                    onChange={handleInputChange}
-                    className="w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
-                  />
-                  <input
-                    type="number"
-                    name="rentTriple"
-                    placeholder="Triple room rent (₹, optional)"
-                    value={formData.rentTriple}
-                    onChange={handleInputChange}
-                    className="w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
-                  />
-                  <select
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleInputChange}
-                    className="w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-green-500 focus:outline-none"
-                  >
-                    <option value="boys">Boys</option>
-                    <option value="girls">Girls</option>
-                    <option value="coed">Co-ed</option>
+              {/* Step 2 */}
+              {step === 2 && (
+                <div className="space-y-6">
+                  <h2 className="ff-display text-4xl mb-6">Room Sharing & Rent</h2>
+                  <select name="gender" value={formData.gender} onChange={handleInputChange} className="w-full p-4 outline-none mb-4" style={{ background: PAPER, border: `1px solid ${LINE}` }}>
+                    <option value="boys">Boys PG</option>
+                    <option value="girls">Girls PG</option>
+                    <option value="coed">Co-ed PG</option>
                   </select>
-                  <input
-                    type="number"
-                    name="totalRooms"
-                    placeholder="Total Rooms (optional)"
-                    value={formData.totalRooms}
-                    onChange={handleInputChange}
-                    className="w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
-                  />
-                  <input
-                    type="number"
-                    name="availableRooms"
-                    placeholder="Available Rooms (optional)"
-                    value={formData.availableRooms}
-                    onChange={handleInputChange}
-                    className="w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Amenities */}
-            {step === 3 && (
-              <div className="space-y-4">
-                <h2 className="text-3xl font-bold text-white mb-6">Amenities</h2>
-                <div className="grid md:grid-cols-3 gap-4">
-                  {amenities.map((amenity) => (
-                    <label key={amenity} className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.amenities.includes(amenity)}
-                        onChange={() => handleAmenityChange(amenity)}
-                        className="w-5 h-5 rounded border-gray-700 text-green-500"
-                      />
-                      <span className="text-gray-300">{amenity}</span>
-                    </label>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Note: WiFi, Food and AC are saved to your listing; the rest are coming soon.
-                </p>
-              </div>
-            )}
-
-            {/* Step 4: Photos */}
-            {step === 4 && (
-              <div className="space-y-4">
-                <h2 className="text-3xl font-bold text-white mb-6">Upload Photos</h2>
-                <label className="border-2 border-dashed border-gray-700 rounded-lg p-12 text-center w-full block cursor-pointer hover:border-green-500 transition">
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-300 mb-2">
-                    {uploading ? "Uploading…" : "Click to add photos"}
-                  </p>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={handleFiles}
-                    disabled={uploading}
-                  />
-                </label>
-                {uploadError && <p className="text-sm text-red-400">{uploadError}</p>}
-                {formData.imageUrls.length > 0 && (
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                    {formData.imageUrls.map((url) => (
-                      <div key={url} className="relative">
-                        <img src={url} alt="" className="w-full h-24 object-cover rounded-lg" />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(url)}
-                          className="absolute top-1 right-1 bg-black/70 text-white rounded-full w-6 h-6 flex items-center justify-center"
-                        >
-                          ×
-                        </button>
+                  
+                  <div className="space-y-4">
+                    {formData.sharingOptions.map((option, index) => (
+                      <div key={index} className="flex gap-3 items-center">
+                        <select className="p-4 outline-none w-1/3" style={{ background: PAPER, border: `1px solid ${LINE}` }} value={option.type} onChange={(e) => updateSharingOption(index, 'type', e.target.value)}>
+                          <option>Single</option><option>Double</option><option>Triple</option>
+                        </select>
+                        <input type="number" placeholder="Rent (₹) *" required className="p-4 outline-none flex-1" style={{ background: PAPER, border: `1px solid ${LINE}` }} value={option.rent} onChange={(e) => updateSharingOption(index, 'rent', e.target.value)} />
+                        {formData.sharingOptions.length > 1 && (
+                          <button type="button" onClick={() => removeSharingOption(index)} className="p-4 text-red-400 hover:text-red-600 transition-colors"><Trash2 size={18} /></button>
+                        )}
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
-            )}
+                  
+                  <button type="button" onClick={addSharingOption} className="ff-mono text-xs underline flex items-center gap-2 mt-4" style={{ color: GREEN }}>
+                    <Plus size={14} /> Add another sharing type
+                  </button>
 
-            {/* Step 5: Owner Info */}
-            {step === 5 && (
-              <div className="space-y-4">
-                <h2 className="text-3xl font-bold text-white mb-6">Owner Information</h2>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <input
-                    type="text"
-                    name="ownerName"
-                    placeholder="Your Name *"
-                    value={formData.ownerName}
-                    onChange={handleInputChange}
-                    className="w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
-                  />
-                  <input
-                    type="tel"
-                    name="phone"
-                    placeholder="Contact Number (10 digits) *"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    className="w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
-                  />
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="Email (optional, not saved yet)"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="md:col-span-2 w-full px-5 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
-                  />
+                  <div className="grid md:grid-cols-2 gap-4 mt-6 pt-6 border-t" style={{ borderColor: LINE }}>
+                    <input type="number" name="totalRooms" placeholder="Total Rooms (Optional)" value={formData.totalRooms} onChange={handleInputChange} className="w-full p-4 outline-none" style={{ background: PAPER, border: `1px solid ${LINE}` }} />
+                    <input type="number" name="availableRooms" placeholder="Available Rooms (Optional)" value={formData.availableRooms} onChange={handleInputChange} className="w-full p-4 outline-none" style={{ background: PAPER, border: `1px solid ${LINE}` }} />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Error message */}
-            {error && (
-              <p className="mt-6 text-sm text-red-400 bg-red-950/40 border border-red-900 rounded-lg px-3 py-2">
-                {error}
-              </p>
-            )}
+              {/* Step 3 */}
+              {step === 3 && (
+                <div className="space-y-6">
+                  <h2 className="ff-display text-4xl mb-8">Amenities</h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    {amenitiesList.map((a) => (
+                      <label key={a} className="flex items-center gap-3 p-4 cursor-pointer transition-colors" style={{ border: `1px solid ${formData.amenities.includes(a) ? GREEN : LINE}`, background: formData.amenities.includes(a) ? `${GREEN}10` : PAPER }}>
+                        <input type="checkbox" checked={formData.amenities.includes(a)} onChange={() => handleAmenityChange(a)} className="w-4 h-4" style={{ accentColor: GREEN }} />
+                        <span className="ff-mono text-sm">{a}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="ff-mono text-[0.65rem] opacity-60 mt-4 uppercase tracking-[0.1em]">* Note: WiFi, Food and AC are currently saved to the backend.</p>
+                </div>
+              )}
 
-            {/* Navigation Buttons */}
-            <div className="flex gap-4 mt-10">
+              {/* Step 4 (Integrated Cloudinary) */}
+              {step === 4 && (
+                <div className="space-y-6">
+                  <h2 className="ff-display text-4xl mb-8">Upload Photos</h2>
+                  <label className="border-2 border-dashed p-12 text-center w-full block cursor-pointer transition-colors" style={{ borderColor: LINE, background: PAPER }}>
+                    <Upload className="w-10 h-10 mx-auto mb-4" style={{ color: GREEN }} />
+                    <p className="ff-mono text-sm mb-2" style={{ color: INK }}>
+                      {uploading ? "Uploading..." : "Click or drag images here"}
+                    </p>
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} disabled={uploading} />
+                  </label>
+                  
+                  {uploadError && <p className="text-xs text-red-500 ff-mono">{uploadError}</p>}
+                  
+                  {formData.imageUrls.length > 0 && (
+                    <div className="grid grid-cols-3 gap-3 mt-6">
+                      {formData.imageUrls.map((url) => (
+                        <div key={url} className="relative aspect-square">
+                          <img src={url} alt="Uploaded" className="w-full h-full object-cover" style={{ border: `1px solid ${LINE}` }} />
+                          <button type="button" onClick={() => removeImage(url)} className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/80 transition-colors">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Step 5 */}
+              {step === 5 && (
+                <div className="space-y-6">
+                  <h2 className="ff-display text-4xl mb-8">Owner Information</h2>
+                  <input type="text" name="ownerName" placeholder="Owner Name *" required value={formData.ownerName} onChange={handleInputChange} className="w-full p-4 outline-none" style={{ background: PAPER, border: `1px solid ${LINE}` }} />
+                  <input type="tel" name="phone" placeholder="Contact Number *" required value={formData.phone} onChange={handleInputChange} className="w-full p-4 outline-none" style={{ background: PAPER, border: `1px solid ${LINE}` }} />
+                  <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleInputChange} className="w-full p-4 outline-none" style={{ background: PAPER, border: `1px solid ${LINE}` }} />
+                </div>
+              )}
+
+              {/* Global Form Errors */}
+              {error && (
+                <div className="mt-8 p-4 flex items-center gap-2 ff-mono text-[0.75rem]" style={{ background: "rgba(217,64,64,0.1)", border: "1px solid rgba(217,64,64,0.3)", color: "#D94040" }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#D94040]" />
+                  {error}
+                </div>
+              )}
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-4 mt-12">
               {step > 1 && (
-                <button
-                  type="button"
-                  onClick={() => setStep(step - 1)}
-                  className="flex-1 px-6 py-3 border border-gray-700 text-white rounded-lg hover:bg-gray-800 transition font-semibold"
-                >
-                  Previous
+                <button type="button" onClick={() => setStep(step - 1)} disabled={submitting} className="flex items-center gap-2 px-8 py-4 ff-mono uppercase tracking-[0.15em] border disabled:opacity-50" style={{ borderColor: LINE, fontSize: "0.75rem" }}>
+                  <ArrowLeft size={15} /> Prev
                 </button>
               )}
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex-1 px-6 py-3 bg-green-500 text-black rounded-lg hover:bg-green-600 transition font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {step === 5 ? (submitting ? "Listing…" : "List My PG") : "Next"}
+              <button type="submit" disabled={submitting || uploading} className="flex-1 flex items-center justify-center gap-2 px-8 py-4 ff-mono uppercase tracking-[0.15em] transition-opacity disabled:opacity-50" style={{ background: INK, color: PAPER, fontSize: "0.75rem" }}>
+                {step === 5 ? (submitting ? "Publishing..." : "Submit Listing") : "Next"} 
+                {step < 5 && <ArrowRight size={15} />}
               </button>
             </div>
           </form>
         </div>
       </div>
     </div>
-  )
+  );
 }
