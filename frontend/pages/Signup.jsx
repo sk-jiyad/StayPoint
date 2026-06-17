@@ -1,33 +1,34 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Mail, Lock, ArrowRight } from "lucide-react"
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff } from "lucide-react"
 
-/* Brand constants matching Landing Page & Signup */
+/* Brand constants matching Landing Page */
 const INK = "#15170F"
 const PAPER = "#F4F1EA"
 const PANEL = "#FBFAF5"
 const GREEN = "#4F7B1E"
 const LINE = "rgba(21,23,15,0.12)"
 
-export default function Login() {
+export default function Signup() {
   const navigate = useNavigate()
 
+  const [userType, setUserType] = useState("student")
+  const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [rememberMe, setRememberMe] = useState(false)
+  const [showPassword, setShowPassword] = useState(false) // Added state for password visibility
   const [error, setError] = useState("")
 
   const handleSubmit = (e) => {
     e.preventDefault()
 
-    if (!email || !password) {
+    if (!name || !email || !password) {
       setError("Please fill in all fields")
       return
     }
 
     setError("")
-    // Authenticate user here, then redirect
-    navigate("/explore")
+    navigate(userType === "owner" ? "/add-pg" : "/explore")
   }
 
   return (
@@ -75,12 +76,12 @@ export default function Login() {
               fontWeight: 500,
             }}
           >
-            Welcome{" "}
+            Create an{" "}
             <span
               className="italic"
               style={{ color: "#9A9684", fontWeight: 400 }}
             >
-              back
+              account
             </span>
           </h1>
 
@@ -91,7 +92,7 @@ export default function Login() {
               color: "#6B6A5C",
             }}
           >
-            Enter your details to access your account.
+            Join the community and find your perfect space.
           </p>
         </div>
 
@@ -103,6 +104,31 @@ export default function Login() {
             border: `1px solid ${LINE}`,
           }}
         >
+          {/* User Type */}
+          <div
+            className="flex p-1 mb-8"
+            style={{
+              background: PAPER,
+              border: `1px solid ${LINE}`,
+            }}
+          >
+            {["student", "owner"].map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setUserType(type)}
+                className="flex-1 py-2.5 ff-mono uppercase tracking-[0.15em]"
+                style={{
+                  fontSize: "0.7rem",
+                  background: userType === type ? INK : "transparent",
+                  color: userType === type ? PAPER : "#6B6A5C",
+                }}
+              >
+                {type === "student" ? "I'm a Student" : "I'm an Owner"}
+              </button>
+            ))}
+          </div>
+
           {/* Error */}
           {error && (
             <div
@@ -120,6 +146,37 @@ export default function Login() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Name */}
+            <div>
+              <label
+                className="block ff-mono uppercase mb-2"
+                style={{
+                  fontSize: "0.65rem",
+                  color: "#6B6A5C",
+                }}
+              >
+                Full Name
+              </label>
+
+              <div
+                className="flex items-center px-4 py-3 focus-within:border-green-700 transition-colors"
+                style={{
+                  background: PAPER,
+                  border: `1px solid ${LINE}`,
+                }}
+              >
+                <User size={16} style={{ color: GREEN }} />
+                <input
+                  type="text"
+                  placeholder="e.g. Rahul Kumar"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-transparent outline-none ml-3 text-sm"
+                  style={{ color: INK }}
+                />
+              </div>
+            </div>
+
             {/* Email */}
             <div>
               <label
@@ -139,7 +196,7 @@ export default function Login() {
                   border: `1px solid ${LINE}`,
                 }}
               >
-                <Mail size={16} style={{ color: GREEN }} className="shrink-0" />
+                <Mail size={16} style={{ color: GREEN }} />
                 <input
                   type="email"
                   placeholder="hello@example.com"
@@ -172,47 +229,37 @@ export default function Login() {
               >
                 <Lock size={16} style={{ color: GREEN }} className="shrink-0" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-transparent outline-none ml-3 text-sm"
                   style={{ color: INK }}
                 />
+                {/* Toggle Password Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="ml-2 focus:outline-none hover:opacity-70 transition-opacity"
+                  style={{ color: "#6B6A5C" }}
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
-            </div>
-
-            {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between pt-1">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-3.5 h-3.5"
-                  style={{ accentColor: GREEN }}
-                />
-                <span className="ff-mono tracking-[0.05em]" style={{ fontSize: "0.75rem", color: "#6B6A5C" }}>
-                  Remember me
-                </span>
-              </label>
-
-              <Link to="#" className="ff-mono tracking-[0.05em] hover:text-black transition-colors" style={{ fontSize: "0.75rem", color: GREEN }}>
-                Forgot password?
-              </Link>
             </div>
 
             {/* Submit */}
             <button
               type="submit"
-              className="group w-full mt-4 flex items-center justify-center gap-2 px-6 py-4 ff-mono uppercase tracking-[0.15em] transition-opacity hover:opacity-90"
+              className="group w-full mt-4 flex items-center justify-center gap-2 px-6 py-4 ff-mono uppercase tracking-[0.15em] hover:opacity-90 transition-opacity"
               style={{
                 background: INK,
                 color: PAPER,
                 fontSize: "0.74rem",
               }}
             >
-              Sign In
+              Create Account
               <ArrowRight
                 size={15}
                 className="group-hover:translate-x-1 transition-transform"
@@ -247,7 +294,7 @@ export default function Login() {
             Google
           </button>
 
-          {/* Signup Link */}
+          {/* Login Link */}
           <p
             className="text-center mt-8 ff-mono"
             style={{
@@ -255,13 +302,13 @@ export default function Login() {
               color: "#6B6A5C",
             }}
           >
-            Don't have an account?{" "}
+            Already have an account?{" "}
             <Link
-              to="/signup"
-              className="underline"
+              to="/login"
+              className="underline hover:text-black transition-colors"
               style={{ color: GREEN }}
             >
-              Sign up here
+              Login here
             </Link>
           </p>
         </div>
