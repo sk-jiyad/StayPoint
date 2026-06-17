@@ -33,6 +33,9 @@ class PGServiceTest {
     @Mock
     private PGRepository pgRepository;
 
+    @Mock
+    private SettingsService settingsService;
+
     @InjectMocks
     private PGService pgService;
 
@@ -188,5 +191,44 @@ class PGServiceTest {
         verify(pgRepository).save(captor.capture());
         assertEquals("girls", captor.getValue().getGender());
         assertEquals(3, captor.getValue().getAvailableRooms());
+    }
+
+    @Test
+    void getVisiblePGs_excludesHiddenAndFrozen() {
+        PG live = new PG(); live.setId(1L);
+        PG hidden = new PG(); hidden.setId(2L); hidden.setHidden(true);
+        PG frozen = new PG(); frozen.setId(3L); frozen.setFrozen(true);
+        when(pgRepository.findAll()).thenReturn(List.of(live, hidden, frozen));
+
+        List<PG> result = pgService.getVisiblePGs();
+
+        assertEquals(1, result.size());
+        assertEquals(1L, result.get(0).getId());
+    }
+
+    @Test
+    void releaseFrozen_clearsFrozenButLeavesManualHidden() {
+        PG frozen = new PG(); frozen.setId(1L); frozen.setFrozen(true);
+        PG hidden = new PG(); hidden.setId(2L); hidden.setHidden(true);
+        when(pgRepository.findAll()).thenReturn(List.of(frozen, hidden));
+
+        pgService.releaseFrozen();
+
+        assertEquals(false, frozen.getFrozen());
+        assertEquals(true, hidden.getHidden());
+        verify(pgRepository).saveAll(List.of(frozen));
+    }
+
+    @Test
+    void createPG_marksFrozenWhenUploadsFrozen() {
+        authenticateAs(7L);
+        when(settingsService.isUploadsFrozen()).thenReturn(true);
+        when(pgRepository.save(any(PG.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        pgService.createPG(validCreateDto());
+
+        ArgumentCaptor<PG> captor = ArgumentCaptor.forClass(PG.class);
+        verify(pgRepository).save(captor.capture());
+        assertEquals(true, captor.getValue().getFrozen());
     }
 }

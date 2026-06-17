@@ -80,6 +80,12 @@ public class PG {
 
     private Integer reviewCount;
 
+    // Admin manually pulled this listing (hidden everywhere except the admin panel)
+    private Boolean hidden;
+
+    // Uploaded while "freeze new uploads" was on — held from the public until the freeze is lifted
+    private Boolean frozen;
+
     // Constructors, getters, and setters
     public PG() {
     }
@@ -291,6 +297,22 @@ public class PG {
 
     public void setReviewCount(Integer reviewCount) {
         this.reviewCount = reviewCount;
+    }
+
+    public Boolean getHidden() {
+        return hidden;
+    }
+
+    public void setHidden(Boolean hidden) {
+        this.hidden = hidden;
+    }
+
+    public Boolean getFrozen() {
+        return frozen;
+    }
+
+    public void setFrozen(Boolean frozen) {
+        this.frozen = frozen;
     }
 
 }

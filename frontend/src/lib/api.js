@@ -93,7 +93,10 @@ export const reviewApi = {
 export const adminApi = {
   listPGs: () => request("/admin/pgs"),
   verify: (id, value) => request(`/admin/pgs/${id}/verify?value=${value}`, { method: "PUT" }),
+  setHidden: (id, value) => request(`/admin/pgs/${id}/hidden?value=${value}`, { method: "PUT" }),
   remove: (id) => request(`/admin/pgs/${id}`, { method: "DELETE" }),
+  getSettings: () => request("/admin/settings"),
+  setUploadsFrozen: (value) => request(`/admin/uploads-frozen?value=${value}`, { method: "PUT" }),
 };
 
 export const chatApi = {

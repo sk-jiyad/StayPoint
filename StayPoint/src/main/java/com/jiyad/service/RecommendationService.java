@@ -38,6 +38,7 @@ public class RecommendationService {
                               String college, Double minRating, int limit) {
         List<String> wanted = amenities == null ? List.of() : amenities;
         return pgRepository.findAll().stream()
+            .filter(pg -> !Boolean.TRUE.equals(pg.getHidden()) && !Boolean.TRUE.equals(pg.getFrozen()))
             .filter(pg -> withinBudget(pg, budget))
             .filter(pg -> genderMatches(pg, gender))
             .filter(pg -> hasAllAmenities(pg, wanted))

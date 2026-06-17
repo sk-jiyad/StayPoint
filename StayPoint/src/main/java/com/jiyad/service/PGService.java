@@ -18,13 +18,26 @@ import java.util.Optional;
 public class PGService {
 
     private final PGRepository pgRepository;
+    private final SettingsService settingsService;
 
-    public PGService(PGRepository pgRepository) {
+    public PGService(PGRepository pgRepository, SettingsService settingsService) {
         this.pgRepository = pgRepository;
+        this.settingsService = settingsService;
     }
 
+    /** All PGs, including hidden/frozen — admin only. */
     public List<PG> getAllPGs() {
         return pgRepository.findAll();
+    }
+
+    /** Public-facing listings: excludes admin-hidden and freeze-held PGs. */
+    public List<PG> getVisiblePGs() {
+        return pgRepository.findAll().stream().filter(this::visible).toList();
+    }
+
+    /** A PG is shown to the public only when it is neither manually hidden nor freeze-held. */
+    private boolean visible(PG pg) {
+        return !Boolean.TRUE.equals(pg.getHidden()) && !Boolean.TRUE.equals(pg.getFrozen());
     }
 
     public Optional<PG> getPGById(Long id) {
@@ -56,6 +69,9 @@ public class PGService {
         pg.setParkingAvailable(dto.getParkingAvailable());
         pg.setAttachedBathroom(dto.getAttachedBathroom());
         pg.setVerified(false);
+        pg.setHidden(false);
+        // If uploads are frozen, hold this listing until an admin lifts the freeze.
+        pg.setFrozen(settingsService.isUploadsFrozen());
         pg.setOwnerUserId(AuthUtils.currentUserId());
         validateRooms(pg.getTotalRooms(), pg.getAvailableRooms());
         return pgRepository.save(pg);
@@ -112,19 +128,20 @@ public class PGService {
     }
 
     public List<PG> searchPGsByLocation(String location) {
-        return pgRepository.findByAddressContainingIgnoreCase(location);
+        return pgRepository.findByAddressContainingIgnoreCase(location).stream().filter(this::visible).toList();
     }
 
     public List<PG> searchPGsByCollege(String college) {
-        return pgRepository.findByNearbyCollegeContainingIgnoreCase(college);
+        return pgRepository.findByNearbyCollegeContainingIgnoreCase(college).stream().filter(this::visible).toList();
     }
 
     public List<PG> filterPGsByRent(BigDecimal minRent, BigDecimal maxRent) {
-        return pgRepository.findByRentRange(minRent, maxRent);
+        return pgRepository.findByRentRange(minRent, maxRent).stream().filter(this::visible).toList();
     }
 
     public List<PG> getMyPGs() {
-        return pgRepository.findByOwnerUserId(AuthUtils.currentUserId());
+        // Hidden/freeze-held listings stay out of the owner's view too (admin-only until released).
+        return pgRepository.findByOwnerUserId(AuthUtils.currentUserId()).stream().filter(this::visible).toList();
     }
 
     // --- Admin operations (route-gated by ROLE_ADMIN in SecurityConfig, so no ownership check) ---
@@ -142,6 +159,24 @@ public class PGService {
         PG pg = pgRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("PG not found with id " + id));
         pgRepository.delete(pg);
+    }
+
+    @Transactional
+    public PG setHidden(Long id, boolean hidden) {
+        PG pg = pgRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("PG not found with id " + id));
+        pg.setHidden(hidden);
+        return pgRepository.save(pg);
+    }
+
+    /** Lift the upload freeze: release every freeze-held listing (manual hides are untouched). */
+    @Transactional
+    public void releaseFrozen() {
+        List<PG> held = pgRepository.findAll().stream()
+            .filter(pg -> Boolean.TRUE.equals(pg.getFrozen()))
+            .toList();
+        held.forEach(pg -> pg.setFrozen(false));
+        pgRepository.saveAll(held);
     }
 
     private void assertOwnership(PG pg) {

@@ -28,7 +28,7 @@ public class PGController {
 
     @GetMapping
     public ResponseEntity<List<PGResponseDTO>> getAllPGs() {
-        List<PGResponseDTO> pgs = pgService.getAllPGs().stream()
+        List<PGResponseDTO> pgs = pgService.getVisiblePGs().stream()
             .map(PGResponseDTO::from)
             .toList();
         return ResponseEntity.ok(pgs);
@@ -45,6 +45,7 @@ public class PGController {
     @GetMapping("/{id}")
     public ResponseEntity<PGResponseDTO> getPGById(@PathVariable Long id) {
         PG pg = pgService.getPGById(id)
+            .filter(p -> !Boolean.TRUE.equals(p.getHidden()) && !Boolean.TRUE.equals(p.getFrozen()))
             .orElseThrow(() -> new ResourceNotFoundException("PG not found with id " + id));
         return ResponseEntity.ok(PGResponseDTO.from(pg));
     }

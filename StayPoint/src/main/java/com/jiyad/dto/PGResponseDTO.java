@@ -31,6 +31,8 @@ public class PGResponseDTO {
     private Boolean attachedBathroom;
     private Double avgRating;
     private Integer reviewCount;
+    private Boolean hidden;
+    private Boolean frozen;
 
     public static PGResponseDTO from(PG pg) {
         PGResponseDTO dto = new PGResponseDTO();
@@ -59,6 +61,8 @@ public class PGResponseDTO {
         dto.attachedBathroom = pg.getAttachedBathroom();
         dto.avgRating = pg.getAvgRating();
         dto.reviewCount = pg.getReviewCount();
+        dto.hidden = pg.getHidden();
+        dto.frozen = pg.getFrozen();
         return dto;
     }
 
@@ -87,4 +91,6 @@ public class PGResponseDTO {
     public Boolean getAttachedBathroom() { return attachedBathroom; }
     public Double getAvgRating() { return avgRating; }
     public Integer getReviewCount() { return reviewCount; }
+    public Boolean getHidden() { return hidden; }
+    public Boolean getFrozen() { return frozen; }
 }
