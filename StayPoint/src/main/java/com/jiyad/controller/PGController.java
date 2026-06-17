@@ -44,8 +44,10 @@ public class PGController {
 
     @GetMapping("/{id}")
     public ResponseEntity<PGResponseDTO> getPGById(@PathVariable Long id) {
+        // Admin-hidden listings 404 for everyone; freeze-held ones stay directly viewable so
+        // their owner can open/edit them (they're only kept out of public browse surfaces).
         PG pg = pgService.getPGById(id)
-            .filter(p -> !Boolean.TRUE.equals(p.getHidden()) && !Boolean.TRUE.equals(p.getFrozen()))
+            .filter(p -> !Boolean.TRUE.equals(p.getHidden()))
             .orElseThrow(() -> new ResourceNotFoundException("PG not found with id " + id));
         return ResponseEntity.ok(PGResponseDTO.from(pg));
     }

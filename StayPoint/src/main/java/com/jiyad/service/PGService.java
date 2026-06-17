@@ -140,8 +140,11 @@ public class PGService {
     }
 
     public List<PG> getMyPGs() {
-        // Hidden/freeze-held listings stay out of the owner's view too (admin-only until released).
-        return pgRepository.findByOwnerUserId(AuthUtils.currentUserId()).stream().filter(this::visible).toList();
+        // Owners keep seeing their own freeze-held listings (shown as "pending" in the UI);
+        // only admin-hidden listings are withheld from them.
+        return pgRepository.findByOwnerUserId(AuthUtils.currentUserId()).stream()
+            .filter(pg -> !Boolean.TRUE.equals(pg.getHidden()))
+            .toList();
     }
 
     // --- Admin operations (route-gated by ROLE_ADMIN in SecurityConfig, so no ownership check) ---

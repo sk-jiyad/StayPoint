@@ -113,6 +113,11 @@ export default function MyListings() {
                 <div className="p-5">
                   <h3 className="text-lg font-semibold text-white">{pg.name}</h3>
                   <p className="text-sm text-gray-400 mb-2">{pg.address}</p>
+                  {pg.frozen && (
+                    <p className="text-xs font-semibold text-yellow-400 bg-yellow-400/10 border border-yellow-400/30 rounded px-2 py-1 mb-3 inline-block">
+                      Pending review — not public yet
+                    </p>
+                  )}
                   <p className="text-[#87E64B] font-bold mb-4">₹{pg.rentSingle}/month</p>
 
                   <div className="flex gap-2">
