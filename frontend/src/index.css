@@ -1,18 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap');
 
-@import "tailwindcss";
 @import "tailwindcss";
 /* @import "tw-animate-css"; */
 
-@font-face {
-  font-family: "Tiempos Fine";
-  src: url("/public/TestTiemposFine-RegularItalic.otf") format("opentype");
+* {
+  font-family: "Inter", sans-serif;
 }
 
-*{
-  font-family: "Instrument Sans", sans-serif;
-}
-
-span{
-  font-family:"Tiempos Fine";
+span {
+  font-family: "Source Serif 4", serif;
 }
