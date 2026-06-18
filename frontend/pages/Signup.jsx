@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Mail, Lock, User, ArrowRight, Eye, EyeOff } from "lucide-react"
+import { useAuth } from "../src/lib/auth.jsx"
+import { ApiError } from "../src/lib/api.js"
 
 /* Brand constants matching Landing Page */
 const INK = "#15170F"
@@ -11,6 +13,7 @@ const LINE = "rgba(21,23,15,0.12)"
 
 export default function Signup() {
   const navigate = useNavigate()
+  const { register } = useAuth()
 
   const [userType, setUserType] = useState("student")
   const [name, setName] = useState("")
@@ -18,17 +21,37 @@ export default function Signup() {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false) // Added state for password visibility
   const [error, setError] = useState("")
+  const [submitting, setSubmitting] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (!name || !email || !password) {
       setError("Please fill in all fields")
       return
     }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters")
+      return
+    }
 
     setError("")
-    navigate(userType === "owner" ? "/add-pg" : "/explore")
+    setSubmitting(true)
+    try {
+      const role = userType === "owner" ? "ROLE_OWNER" : "ROLE_USER"
+      await register(email, password, role)
+      navigate(userType === "owner" ? "/add-pg" : "/explore")
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.errors
+            ? Object.values(err.errors)[0]
+            : err.message
+          : "Couldn't reach the server. Is the backend running?"
+      )
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -252,14 +275,15 @@ export default function Signup() {
             {/* Submit */}
             <button
               type="submit"
-              className="group w-full mt-4 flex items-center justify-center gap-2 px-6 py-4 ff-mono uppercase tracking-[0.15em] hover:opacity-90 transition-opacity"
+              disabled={submitting}
+              className="group w-full mt-4 flex items-center justify-center gap-2 px-6 py-4 ff-mono uppercase tracking-[0.15em] hover:opacity-90 transition-opacity disabled:opacity-60"
               style={{
                 background: INK,
                 color: PAPER,
                 fontSize: "0.74rem",
               }}
             >
-              Create Account
+              {submitting ? "Creating…" : "Create Account"}
               <ArrowRight
                 size={15}
                 className="group-hover:translate-x-1 transition-transform"

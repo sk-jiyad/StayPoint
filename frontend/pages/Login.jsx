@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Mail, Lock, ArrowRight } from "lucide-react"
+import { useAuth } from "../src/lib/auth.jsx"
+import { ApiError } from "../src/lib/api.js"
 
 /* Brand constants matching Landing Page & Signup */
 const INK = "#15170F"
@@ -11,13 +13,15 @@ const LINE = "rgba(21,23,15,0.12)"
 
 export default function Login() {
   const navigate = useNavigate()
+  const { login } = useAuth()
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState("")
+  const [submitting, setSubmitting] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (!email || !password) {
@@ -26,8 +30,21 @@ export default function Login() {
     }
 
     setError("")
-    // Authenticate user here, then redirect
-    navigate("/explore")
+    setSubmitting(true)
+    try {
+      await login(email, password)
+      navigate("/explore")
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.status === 401
+            ? "Invalid email or password"
+            : err.message
+          : "Couldn't reach the server. Is the backend running?"
+      )
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -205,14 +222,15 @@ export default function Login() {
             {/* Submit */}
             <button
               type="submit"
-              className="group w-full mt-4 flex items-center justify-center gap-2 px-6 py-4 ff-mono uppercase tracking-[0.15em] transition-opacity hover:opacity-90"
+              disabled={submitting}
+              className="group w-full mt-4 flex items-center justify-center gap-2 px-6 py-4 ff-mono uppercase tracking-[0.15em] transition-opacity hover:opacity-90 disabled:opacity-60"
               style={{
                 background: INK,
                 color: PAPER,
                 fontSize: "0.74rem",
               }}
             >
-              Sign In
+              {submitting ? "Signing in…" : "Sign In"}
               <ArrowRight
                 size={15}
                 className="group-hover:translate-x-1 transition-transform"
