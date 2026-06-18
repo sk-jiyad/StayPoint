@@ -5,6 +5,7 @@ import com.jiyad.dto.PGCreateDTO;
 import com.jiyad.exception.ResourceNotFoundException;
 import com.jiyad.security.JwtAuthFilter;
 import com.jiyad.service.PGService;
+import com.jiyad.service.RecommendationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -30,6 +31,7 @@ class PGControllerTest {
     @Autowired private ObjectMapper objectMapper;
 
     @MockitoBean private PGService pgService;
+    @MockitoBean private RecommendationService recommendationService;
     @MockitoBean private JwtAuthFilter jwtAuthFilter;
 
     @Test
@@ -75,11 +77,14 @@ class PGControllerTest {
         dto.setOwnerName("Tester");
         dto.setContactNumber("1234567890");
         dto.setAddress("123 Some Long Street Name");
+        dto.setCity("Asansol");
         dto.setRentSingle(new BigDecimal("5000"));
         dto.setRentDouble(new BigDecimal("7000"));
         dto.setFoodProvided(true);
         dto.setWifiAvailable(true);
         dto.setAcAvailable(false);
+        dto.setTotalRooms(10);
+        dto.setAvailableRooms(4);
 
         com.jiyad.model.PG saved = new com.jiyad.model.PG();
         saved.setId(1L);

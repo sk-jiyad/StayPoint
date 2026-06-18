@@ -18,13 +18,26 @@ import java.util.Optional;
 public class PGService {
 
     private final PGRepository pgRepository;
+    private final SettingsService settingsService;
 
-    public PGService(PGRepository pgRepository) {
+    public PGService(PGRepository pgRepository, SettingsService settingsService) {
         this.pgRepository = pgRepository;
+        this.settingsService = settingsService;
     }
 
+    /** All PGs, including hidden/frozen — admin only. */
     public List<PG> getAllPGs() {
         return pgRepository.findAll();
+    }
+
+    /** Public-facing listings: excludes admin-hidden and freeze-held PGs. */
+    public List<PG> getVisiblePGs() {
+        return pgRepository.findAll().stream().filter(this::visible).toList();
+    }
+
+    /** A PG is shown to the public only when it is neither manually hidden nor freeze-held. */
+    private boolean visible(PG pg) {
+        return !Boolean.TRUE.equals(pg.getHidden()) && !Boolean.TRUE.equals(pg.getFrozen());
     }
 
     public Optional<PG> getPGById(Long id) {
@@ -39,6 +52,7 @@ public class PGService {
         pg.setContactNumber(dto.getContactNumber());
         pg.setAlternateContact(dto.getAlternateContact());
         pg.setAddress(dto.getAddress());
+        pg.setCity(dto.getCity());
         pg.setLandmark(dto.getLandmark());
         pg.setRentSingle(dto.getRentSingle());
         pg.setRentDouble(dto.getRentDouble());
@@ -50,7 +64,16 @@ public class PGService {
         pg.setGender(dto.getGender());
         pg.setTotalRooms(dto.getTotalRooms());
         pg.setAvailableRooms(dto.getAvailableRooms());
+        pg.setNearbyCollege(dto.getNearbyCollege());
+        pg.setLaundryAvailable(dto.getLaundryAvailable());
+        pg.setParkingAvailable(dto.getParkingAvailable());
+        pg.setAttachedBathroom(dto.getAttachedBathroom());
+        pg.setVerified(false);
+        pg.setHidden(false);
+        // If uploads are frozen, hold this listing until an admin lifts the freeze.
+        pg.setFrozen(settingsService.isUploadsFrozen());
         pg.setOwnerUserId(AuthUtils.currentUserId());
+        validateRooms(pg.getTotalRooms(), pg.getAvailableRooms());
         return pgRepository.save(pg);
     }
 
@@ -65,6 +88,7 @@ public class PGService {
         if (dto.getOwnerName() != null) pg.setOwnerName(dto.getOwnerName());
         if (dto.getContactNumber() != null) pg.setContactNumber(dto.getContactNumber());
         if (dto.getAddress() != null) pg.setAddress(dto.getAddress());
+        if (dto.getCity() != null) pg.setCity(dto.getCity());
         if (dto.getRentSingle() != null) pg.setRentSingle(dto.getRentSingle());
         if (dto.getRentDouble() != null) pg.setRentDouble(dto.getRentDouble());
         if (dto.getFoodProvided() != null) pg.setFoodProvided(dto.getFoodProvided());
@@ -78,8 +102,21 @@ public class PGService {
         if (dto.getGender() != null) pg.setGender(dto.getGender());
         if (dto.getTotalRooms() != null) pg.setTotalRooms(dto.getTotalRooms());
         if (dto.getAvailableRooms() != null) pg.setAvailableRooms(dto.getAvailableRooms());
+        if (dto.getNearbyCollege() != null) pg.setNearbyCollege(dto.getNearbyCollege());
+        if (dto.getLaundryAvailable() != null) pg.setLaundryAvailable(dto.getLaundryAvailable());
+        if (dto.getParkingAvailable() != null) pg.setParkingAvailable(dto.getParkingAvailable());
+        if (dto.getAttachedBathroom() != null) pg.setAttachedBathroom(dto.getAttachedBathroom());
 
+        validateRooms(pg.getTotalRooms(), pg.getAvailableRooms());
         return pgRepository.save(pg);
+    }
+
+    // Available rooms can never exceed total rooms (checked on the merged values so
+    // partial updates that touch only one of the two are still caught).
+    private void validateRooms(Integer total, Integer available) {
+        if (total != null && available != null && available > total) {
+            throw new IllegalArgumentException("Available rooms can't exceed total rooms");
+        }
     }
 
     @Transactional
@@ -91,15 +128,58 @@ public class PGService {
     }
 
     public List<PG> searchPGsByLocation(String location) {
-        return pgRepository.findByAddressContainingIgnoreCase(location);
+        return pgRepository.findByAddressContainingIgnoreCase(location).stream().filter(this::visible).toList();
+    }
+
+    public List<PG> searchPGsByCollege(String college) {
+        return pgRepository.findByNearbyCollegeContainingIgnoreCase(college).stream().filter(this::visible).toList();
     }
 
     public List<PG> filterPGsByRent(BigDecimal minRent, BigDecimal maxRent) {
-        return pgRepository.findByRentRange(minRent, maxRent);
+        return pgRepository.findByRentRange(minRent, maxRent).stream().filter(this::visible).toList();
     }
 
     public List<PG> getMyPGs() {
-        return pgRepository.findByOwnerUserId(AuthUtils.currentUserId());
+        // Owners keep seeing their own freeze-held listings (shown as "pending" in the UI);
+        // only admin-hidden listings are withheld from them.
+        return pgRepository.findByOwnerUserId(AuthUtils.currentUserId()).stream()
+            .filter(pg -> !Boolean.TRUE.equals(pg.getHidden()))
+            .toList();
+    }
+
+    // --- Admin operations (route-gated by ROLE_ADMIN in SecurityConfig, so no ownership check) ---
+
+    @Transactional
+    public PG setVerified(Long id, boolean verified) {
+        PG pg = pgRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("PG not found with id " + id));
+        pg.setVerified(verified);
+        return pgRepository.save(pg);
+    }
+
+    @Transactional
+    public void deleteByIdAsAdmin(Long id) {
+        PG pg = pgRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("PG not found with id " + id));
+        pgRepository.delete(pg);
+    }
+
+    @Transactional
+    public PG setHidden(Long id, boolean hidden) {
+        PG pg = pgRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("PG not found with id " + id));
+        pg.setHidden(hidden);
+        return pgRepository.save(pg);
+    }
+
+    /** Lift the upload freeze: release every freeze-held listing (manual hides are untouched). */
+    @Transactional
+    public void releaseFrozen() {
+        List<PG> held = pgRepository.findAll().stream()
+            .filter(pg -> Boolean.TRUE.equals(pg.getFrozen()))
+            .toList();
+        held.forEach(pg -> pg.setFrozen(false));
+        pgRepository.saveAll(held);
     }
 
     private void assertOwnership(PG pg) {

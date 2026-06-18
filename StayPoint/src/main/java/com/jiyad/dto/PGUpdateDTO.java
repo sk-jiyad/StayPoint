@@ -21,6 +21,9 @@ public class PGUpdateDTO {
     @Size(min = 10, max = 500)
     private String address;
 
+    @Size(max = 100)
+    private String city;
+
     @Size(max = 200)
     private String landmark;
 
@@ -54,6 +57,15 @@ public class PGUpdateDTO {
     @PositiveOrZero
     private Integer availableRooms;
 
+    @Size(max = 200)
+    private String nearbyCollege;
+
+    private Boolean laundryAvailable;
+
+    private Boolean parkingAvailable;
+
+    private Boolean attachedBathroom;
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -65,6 +77,9 @@ public class PGUpdateDTO {
 
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
+
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
 
     public BigDecimal getRentSingle() { return rentSingle; }
     public void setRentSingle(BigDecimal rentSingle) { this.rentSingle = rentSingle; }
@@ -101,4 +116,16 @@ public class PGUpdateDTO {
 
     public Integer getAvailableRooms() { return availableRooms; }
     public void setAvailableRooms(Integer availableRooms) { this.availableRooms = availableRooms; }
+
+    public String getNearbyCollege() { return nearbyCollege; }
+    public void setNearbyCollege(String nearbyCollege) { this.nearbyCollege = nearbyCollege; }
+
+    public Boolean getLaundryAvailable() { return laundryAvailable; }
+    public void setLaundryAvailable(Boolean laundryAvailable) { this.laundryAvailable = laundryAvailable; }
+
+    public Boolean getParkingAvailable() { return parkingAvailable; }
+    public void setParkingAvailable(Boolean parkingAvailable) { this.parkingAvailable = parkingAvailable; }
+
+    public Boolean getAttachedBathroom() { return attachedBathroom; }
+    public void setAttachedBathroom(Boolean attachedBathroom) { this.attachedBathroom = attachedBathroom; }
 }

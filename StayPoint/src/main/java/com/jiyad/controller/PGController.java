@@ -6,6 +6,7 @@ import com.jiyad.dto.PGUpdateDTO;
 import com.jiyad.exception.ResourceNotFoundException;
 import com.jiyad.model.PG;
 import com.jiyad.service.PGService;
+import com.jiyad.service.RecommendationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,14 +19,16 @@ import java.util.List;
 public class PGController {
 
     private final PGService pgService;
+    private final RecommendationService recommendationService;
 
-    public PGController(PGService pgService) {
+    public PGController(PGService pgService, RecommendationService recommendationService) {
         this.pgService = pgService;
+        this.recommendationService = recommendationService;
     }
 
     @GetMapping
     public ResponseEntity<List<PGResponseDTO>> getAllPGs() {
-        List<PGResponseDTO> pgs = pgService.getAllPGs().stream()
+        List<PGResponseDTO> pgs = pgService.getVisiblePGs().stream()
             .map(PGResponseDTO::from)
             .toList();
         return ResponseEntity.ok(pgs);
@@ -41,7 +44,10 @@ public class PGController {
 
     @GetMapping("/{id}")
     public ResponseEntity<PGResponseDTO> getPGById(@PathVariable Long id) {
+        // Admin-hidden listings 404 for everyone; freeze-held ones stay directly viewable so
+        // their owner can open/edit them (they're only kept out of public browse surfaces).
         PG pg = pgService.getPGById(id)
+            .filter(p -> !Boolean.TRUE.equals(p.getHidden()))
             .orElseThrow(() -> new ResourceNotFoundException("PG not found with id " + id));
         return ResponseEntity.ok(PGResponseDTO.from(pg));
     }
@@ -67,8 +73,31 @@ public class PGController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<PGResponseDTO>> searchPGs(@RequestParam String location) {
-        List<PGResponseDTO> pgs = pgService.searchPGsByLocation(location).stream()
+    public ResponseEntity<List<PGResponseDTO>> searchPGs(
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String college) {
+        List<PG> results;
+        if (college != null && !college.isBlank()) {
+            results = pgService.searchPGsByCollege(college);
+        } else {
+            results = pgService.searchPGsByLocation(location == null ? "" : location);
+        }
+        List<PGResponseDTO> pgs = results.stream()
+            .map(PGResponseDTO::from)
+            .toList();
+        return ResponseEntity.ok(pgs);
+    }
+
+    @GetMapping("/recommend")
+    public ResponseEntity<List<PGResponseDTO>> recommend(
+            @RequestParam(required = false) Integer budget,
+            @RequestParam(required = false) String gender,
+            @RequestParam(required = false) List<String> amenities,
+            @RequestParam(required = false) String college,
+            @RequestParam(required = false) Double minRating,
+            @RequestParam(defaultValue = "3") int limit) {
+        List<PGResponseDTO> pgs = recommendationService
+            .recommend(budget, gender, amenities, college, minRating, limit).stream()
             .map(PGResponseDTO::from)
             .toList();
         return ResponseEntity.ok(pgs);
