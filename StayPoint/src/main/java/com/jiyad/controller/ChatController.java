@@ -35,6 +35,21 @@ public class ChatController {
                 }
             }
         }
-        return ResponseEntity.ok(chatService.reply(message, history));
+
+        // Optional PGs shown in the previous bot turn, so follow-ups ("which is cheapest?",
+        // "any with AC?") can be answered against that list.
+        List<Map<String, Object>> lastPgs = new ArrayList<>();
+        if (body.get("lastPgs") instanceof List<?> list) {
+            for (Object item : list) {
+                if (item instanceof Map<?, ?> pg && pg.get("name") != null) {
+                    Map<String, Object> compact = new java.util.HashMap<>();
+                    for (String k : List.of("name", "rentSingle", "gender", "nearbyCollege", "avgRating")) {
+                        if (pg.get(k) != null) compact.put(k, pg.get(k));
+                    }
+                    lastPgs.add(compact);
+                }
+            }
+        }
+        return ResponseEntity.ok(chatService.reply(message, history, lastPgs));
     }
 }

@@ -95,6 +95,18 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<!--
+						Prefer IPv6 when resolving outbound hosts during local `spring-boot:run`.
+						Java's HttpClient connects to a single resolved address (no Happy-Eyeballs
+						fallback), so on networks where the IPv4 route to Google is broken but IPv6
+						works, the Gemini call would otherwise hang and the chatbot would silently
+						fall back to its rule-based replies. This only affects `spring-boot:run`
+						(local dev); the packaged jar used in production is unaffected. Override per
+						run with: -Dspring-boot.run.jvmArguments=...
+					-->
+					<jvmArguments>-Djava.net.preferIPv6Addresses=true</jvmArguments>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

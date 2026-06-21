@@ -101,5 +101,7 @@ export const adminApi = {
 
 export const chatApi = {
   // history: prior turns [{ role: "user" | "model", text }] for multi-turn context
-  send: (message, history = []) => request("/chat", { method: "POST", body: { message, history } }),
+  // lastPgs: PGs shown in the previous bot turn, so follow-ups ("which is cheapest?") resolve
+  send: (message, history = [], lastPgs = []) =>
+    request("/chat", { method: "POST", body: { message, history, lastPgs } }),
 };

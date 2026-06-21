@@ -14,11 +14,16 @@ const LINE = "rgba(21,23,15,0.12)";
 
 const GREETING = {
   from: "bot",
-  text: "Hi! I'm the StayPoint assistant. Ask me about PGs, or tell me your budget — e.g. \"a highly rated PG under 6000 for girls with wifi near Jamia\".",
+  text: "Hi! I'm Quanta 🏠 — your StayPoint PG assistant. Ask me about PGs, or tell me your budget — e.g. \"a highly rated PG under 6000 for girls with wifi near Jamia\". I understand English, हिंदी and বাংলা.",
   pgs: [],
 };
 
-const SUGGESTIONS = ["What is a PG?", "Suggest a PG under 6000 for girls with wifi", "What documents do I need?"];
+const SUGGESTIONS = [
+  "Suggest a PG under 6000 for girls with wifi",
+  "What documents do I need?",
+  "6000 ke andar wifi wala PG batao",
+  "Asansol e sosta PG dekhao",
+];
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
@@ -36,10 +41,13 @@ export default function ChatWidget() {
     if (!message || loading) return;
     setInput("");
     const history = messages.slice(-8).map((m) => ({ role: m.from === "user" ? "user" : "model", text: m.text }));
+    // PGs shown in the most recent bot turn — sent so follow-ups ("which is cheapest?") resolve.
+    const lastBot = [...messages].reverse().find((m) => m.from === "bot" && m.pgs && m.pgs.length);
+    const lastPgs = lastBot ? lastBot.pgs : [];
     setMessages((m) => [...m, { from: "user", text: message, pgs: [] }]);
     setLoading(true);
     try {
-      const res = await chatApi.send(message, history);
+      const res = await chatApi.send(message, history, lastPgs);
       setMessages((m) => [...m, { from: "bot", text: res.reply, pgs: res.pgs || [] }]);
     } catch {
       setMessages((m) => [...m, { from: "bot", text: "Sorry, I couldn't reach the server right now.", pgs: [] }]);
@@ -66,7 +74,7 @@ export default function ChatWidget() {
         >
           <div className="px-4 py-3 flex items-center gap-2" style={{ background: INK, color: PAPER }}>
             <MessageCircle size={16} />
-            <span className="ff-mono uppercase tracking-[0.15em]" style={{ fontSize: "0.7rem" }}>StayPoint Assistant</span>
+            <span className="ff-mono uppercase tracking-[0.15em]" style={{ fontSize: "0.7rem" }}>Quanta · StayPoint Assistant</span>
           </div>
 
           <div ref={bodyRef} className="flex-1 overflow-y-auto p-3 space-y-3" style={{ background: PAPER }}>

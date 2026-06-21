@@ -30,7 +30,7 @@ class ChatServiceTest {
     @Test
     void greeting_isDetected() {
         ChatResponse r = chatService.reply("hello there");
-        assertTrue(r.reply().toLowerCase().contains("staypoint assistant"));
+        assertTrue(r.reply().toLowerCase().contains("quanta"));
         assertTrue(r.pgs().isEmpty());
     }
 

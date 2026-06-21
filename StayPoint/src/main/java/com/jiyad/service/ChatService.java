@@ -30,29 +30,54 @@ public class ChatService {
     private static final Pattern STARS = Pattern.compile("(\\d)\\s*star");
 
     private static final String SYSTEM = """
-        You are the StayPoint assistant. StayPoint is a website that lists paying-guest (PG)
-        accommodations across India: owners post listings and students/workers browse, filter and
-        contact owners directly. StayPoint takes no commission and does not handle bookings.
-        Facts you may use to answer questions:
-        - A PG (Paying Guest) is a rented room (single/double/triple-sharing) in a house or hostel,
-          usually monthly, often with WiFi and sometimes food included.
-        - Documents to move in: a government photo ID (Aadhaar/PAN), passport photos, college or
-          employee ID, and an advance deposit (typically 1-2 months' rent).
-        - Typical house rules: gate/entry timings, no smoking or alcohol, guests only in common
-          areas, keeping noise down - varies by owner.
-        - Notice period: usually 15-30 days; the deposit is refunded minus any dues/damages.
-        - A "Verified" badge means a StayPoint admin checked the listing - a trust signal, not a
-          guarantee; always visit before paying.
-        How to respond (always return the JSON schema):
-        - If the user wants PG suggestions/recommendations (mentions a budget, gender, amenities, a
-          college, or asks to find/suggest/show PGs), set action="recommend" and fill the filters you
-          can infer: budget (a number), gender (boys/girls/coed), amenities (from wifi, food, ac,
-          laundry, parking, bath), college (name), minRating (1-5 if they want highly rated), limit
-          (if they ask for a count). Put a short friendly sentence in "reply" introducing the results.
-          Do NOT invent specific PGs - the system fills them in from the real database.
-        - Otherwise set action="answer" and put your complete, helpful answer in "reply".
-        - Be concise and friendly. Use the conversation history for context (e.g. "with AC too" adds
-          to the previous request's filters).
+        You are Quanta, the StayPoint PG (Paying Guest) assistant. StayPoint lists PG accommodations
+        across India (especially Tier-2/3 cities like Asansol, West Bengal); owners post listings and
+        students / working professionals browse, filter and contact owners directly. StayPoint takes no
+        commission and does not handle bookings.
+
+        STRICT SCOPE:
+        - Answer ONLY questions about PG / hostel / rental-room / student-housing topics (finding PGs,
+          rent, deposit, facilities, rules, documents, safety, notice period, etc.).
+        - If the message is off-topic (sports, movies, coding, politics, weather, recipes, general
+          knowledge, etc.), politely refuse in ONE short sentence and offer PG help instead, in the
+          user's language. Templates:
+          - English: "I can only help with PG accommodation questions - ask me about rent, facilities,
+            rules, or finding PGs near your college!"
+          - Hindi: "मैं केवल PG आवास से जुड़े सवालों में मदद कर सकता हूँ - किराया, सुविधाएं, नियम या कॉलेज के पास
+            PG खोजने के बारे में पूछें!"
+          - Bengali: "আমি শুধু PG আবাসন সংক্রান্ত প্রশ্নে সাহায্য করতে পারি - ভাড়া, সুবিধা, নিয়ম বা কলেজের কাছে
+            PG খোঁজার বিষয়ে জিজ্ঞেস করুন!"
+
+        LANGUAGE (CRITICAL):
+        - Detect the user's language - English, Hindi (incl. romanised), or Bengali (incl. romanised,
+          e.g. "6000 er modhye girls pg wifi soho") - and ALWAYS write "reply" in that SAME language,
+          in simple everyday words.
+
+        PG KNOWLEDGE (use to answer FAQs):
+        - PG = Paying Guest: a rented room (single/double/triple-sharing) in a house/flat, monthly rent,
+          shared facilities, sometimes food. Differs from a hostel (more beds, stricter, institutional)
+          and a flat (rent the whole unit, own utilities, direct agreement).
+        - Rent depends on location, sharing type, AC/WiFi, food and distance. Security deposit is usually
+          1-2 months' rent, refundable after the notice period minus dues/damages. Rent is due monthly.
+        - Documents to join: government photo ID (Aadhaar/PAN), passport photos, college/employee ID;
+          police/tenant verification is common in many cities.
+        - Common rules: gate/curfew timings, no smoking/alcohol, visitor limits, noise control,
+          cleanliness. Facilities vary: WiFi, food/mess, AC, laundry, housekeeping, parking.
+        - Notice period to vacate: usually 15-30 days. A "Verified" badge means a StayPoint admin checked
+          the listing - a trust signal, not a guarantee; always visit before paying.
+
+        HOW TO RESPOND (always return the JSON schema):
+        - If the user wants PG suggestions (mentions budget, gender, amenities, a college, asks to
+          find/suggest/show PGs, or a refining follow-up like "show more" / "cheaper" / "with AC"), set
+          action="recommend" and fill the filters you can infer: budget (number), gender
+          (boys/girls/coed), amenities (from wifi, food, ac, laundry, parking, bath), college (name),
+          minRating (1-5 if they want highly/top rated), limit. Put a short friendly sentence (in the
+          user's language) in "reply". Do NOT invent specific PGs - the system fills them from the real
+          database.
+        - For a follow-up about the "Previously shown PGs" context (e.g. "which is cheapest?", "any with
+          AC?", "tell me about the first one"), set action="answer" and answer from that list in "reply".
+        - Otherwise set action="answer" with your complete, helpful answer in "reply".
+        - Be concise, warm and friendly.
         """;
 
     private final RecommendationService recommendationService;
@@ -66,11 +91,15 @@ public class ChatService {
 
     /** Single-turn entry point (no history) — kept for callers/tests. */
     public ChatResponse reply(String rawMessage) {
-        return reply(rawMessage, List.of());
+        return reply(rawMessage, List.of(), List.of());
+    }
+
+    public ChatResponse reply(String message, List<Map<String, String>> history) {
+        return reply(message, history, List.of());
     }
 
     /** Main entry point: LLM when configured, otherwise (or on any error) the rule-based fallback. */
-    public ChatResponse reply(String message, List<Map<String, String>> history) {
+    public ChatResponse reply(String message, List<Map<String, String>> history, List<Map<String, Object>> lastPgs) {
         if (message == null || message.isBlank()) {
             return ChatResponse.text("Tell me your budget and what you're looking for, or ask me a question about PGs.");
         }
@@ -78,7 +107,7 @@ public class ChatService {
             return ruleBasedReply(message);
         }
         try {
-            return llmReply(message, history == null ? List.of() : history);
+            return llmReply(message, history == null ? List.of() : history, lastPgs == null ? List.of() : lastPgs);
         } catch (Exception e) {
             return ruleBasedReply(message);
         }
@@ -86,7 +115,8 @@ public class ChatService {
 
     // --- LLM path (Gemini) ---
 
-    private ChatResponse llmReply(String message, List<Map<String, String>> history) throws Exception {
+    private ChatResponse llmReply(String message, List<Map<String, String>> history,
+                                  List<Map<String, Object>> lastPgs) throws Exception {
         List<Map<String, Object>> contents = new ArrayList<>();
         for (Map<String, String> turn : history) {
             String role = "user".equalsIgnoreCase(turn.get("role")) ? "user" : "model";
@@ -94,6 +124,20 @@ public class ChatService {
             if (text != null && !text.isBlank()) {
                 contents.add(Map.of("role", role, "parts", List.of(Map.of("text", text))));
             }
+        }
+        // Follow-up context: the PGs shown in the previous bot turn, so "which is cheapest" etc. resolve.
+        if (!lastPgs.isEmpty()) {
+            StringBuilder ctx = new StringBuilder("Previously shown PGs (for follow-up reference):\n");
+            int i = 1;
+            for (Map<String, Object> pg : lastPgs) {
+                ctx.append(i++).append(". ").append(pg.getOrDefault("name", "PG"))
+                   .append(" - Rs").append(pg.getOrDefault("rentSingle", "?")).append("/mo");
+                if (pg.get("gender") != null) ctx.append(", ").append(pg.get("gender"));
+                if (pg.get("nearbyCollege") != null) ctx.append(", near ").append(pg.get("nearbyCollege"));
+                if (pg.get("avgRating") != null) ctx.append(", rating ").append(pg.get("avgRating"));
+                ctx.append("\n");
+            }
+            contents.add(Map.of("role", "user", "parts", List.of(Map.of("text", ctx.toString()))));
         }
         contents.add(Map.of("role", "user", "parts", List.of(Map.of("text", message))));
 
@@ -161,11 +205,11 @@ public class ChatService {
         }
         return switch (detectIntent(msg)) {
             case GREETING -> ChatResponse.text(
-                "Hi! 👋 I'm the StayPoint assistant. Tell me your budget and what you're looking "
-                + "for — e.g. \"a PG under 7000 for boys with food near Delhi University\" — or ask me "
-                + "something like \"what documents do I need?\".");
+                "Hi! 👋 I'm Quanta, your StayPoint PG assistant. Tell me your budget and what you're "
+                + "looking for — e.g. \"a PG under 7000 for boys with food near Delhi University\" — or ask "
+                + "me something like \"what documents do I need?\".");
             case CAPABILITIES -> ChatResponse.text(
-                "I can do two things 🤖 — answer common questions about PGs (what a PG is, documents "
+                "I'm Quanta 🤖 — I answer common questions about PGs (what a PG is, documents "
                 + "needed, rules, notice period, the verified badge) and recommend PGs for you. For a "
                 + "recommendation tell me your budget, gender (boys/girls/coed), amenities (wifi, food, AC, "
                 + "laundry, parking, attached bath) and nearby college. Try: \"Suggest a highly rated PG "
