@@ -102,13 +102,19 @@ public class RecommendationService {
         return Math.min(pg.getAvailableRooms(), 5) / 5.0;
     }
 
-    private double collegeMatch(PG pg, String college) {
-        if (college == null || college.isBlank()) return 0.5;
-        String nc = pg.getNearbyCollege();
-        if (nc == null || nc.isBlank()) return 0.0;
-        String a = nc.toLowerCase();
-        String b = college.toLowerCase();
-        return (a.contains(b) || b.contains(a)) ? 1.0 : 0.0;
+    private double collegeMatch(PG pg, String location) {
+        if (location == null || location.isBlank()) return 0.5;
+        String b = location.toLowerCase().trim();
+        // Match the requested location against any place field on the listing, not just the
+        // nearby college — users often name a locality or landmark (e.g. "Botanic Garden") that
+        // lives in the address rather than the college field.
+        for (String field : new String[]{ pg.getNearbyCollege(), pg.getAddress(),
+                                           pg.getLandmark(), pg.getCity() }) {
+            if (field == null || field.isBlank()) continue;
+            String a = field.toLowerCase();
+            if (a.contains(b) || b.contains(a)) return 1.0;
+        }
+        return 0.0;
     }
 
     private double amenityScore(PG pg, List<String> wanted) {
