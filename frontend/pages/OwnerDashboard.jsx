@@ -67,7 +67,7 @@ export default function OwnerDashboard() {
   const roomsAvailable = properties.reduce((acc, pg) => acc + (pg.availableRooms || 0), 0);
 
   return (
-    <div className="min-h-screen py-12 md:py-20 px-4 md:px-10 grain" style={{ background: PAPER, color: INK }}>
+    <div className="min-h-screen pt-28 pb-16 md:pb-24 px-4 md:px-10 grain" style={{ background: PAPER, color: INK }}>
       <style>{`
         .ff-display { font-family: var(--font-display); }
         .ff-mono { font-family: var(--font-mono); }

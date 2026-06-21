@@ -14,11 +14,10 @@ import "./index.css";
 
 function App() {
   const location = useLocation();
-  const hideNavbarExactPaths = ["/signup", "/login", "/add-pg", "/owner-dashboard"];
+  const hideNavbarExactPaths = ["/signup", "/login"];
   const shouldShowNavbar =
     !hideNavbarExactPaths.includes(location.pathname) &&
-    !location.pathname.startsWith("/pg/") &&
-    !location.pathname.startsWith("/edit-pg/");
+    !location.pathname.startsWith("/pg/");
   const hideChat = ["/login", "/signup"].includes(location.pathname);
 
   return (
