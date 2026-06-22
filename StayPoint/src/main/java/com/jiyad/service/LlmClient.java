@@ -14,31 +14,28 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
- * LLM client for the chatbot. Provider is chosen from the environment: if GROQ_API_KEY is set it
- * uses Groq (OpenAI-compatible, generous free tier), otherwise it uses Google Gemini, otherwise it
- * is disabled and {@link ChatService} falls back to its rule-based logic.
- *
- * <p>Both providers are driven through the same {@link #complete} method (system prompt + a Gemini
- * style conversation + a generation config). Transient failures (429 rate-limit, 5xx, timeouts) are
- * retried with backoff and, if the primary model stays unavailable, a secondary model is tried.
+ * LLM client for the chatbot, with runtime failover across providers. Configured providers are tried
+ * in order — Groq first (if GROQ_API_KEY is set), then Gemini (if GEMINI_API_KEY is set). For each
+ * provider it retries transient failures (429 rate-limit, 5xx, timeouts) with backoff and tries a
+ * secondary model; if a provider is unusable (bad key/request, or out of quota) it moves on to the
+ * next. Only when every provider fails does it throw, so {@link ChatService} falls back to its
+ * rule-based logic. If no key is set at all it is disabled.
  */
 @Component
 public class LlmClient {
 
-    private enum Provider { GROQ, GEMINI, NONE }
+    private enum Provider { GROQ, GEMINI }
 
     private static final String GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
     private static final String GEMINI_ENDPOINT =
         "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
-    private static final int MAX_ATTEMPTS = 3;
-    private static final long BASE_BACKOFF_MS = 400;
+    private static final int MAX_ATTEMPTS = 3;       // per model
+    private static final long BASE_BACKOFF_MS = 400; // ×attempt
 
-    private final Provider provider;
-    private final String apiKey;
-    private final String model;
-    private final String fallbackModel;
+    private final List<ProviderConfig> providers = new ArrayList<>();
     private final HttpClient http = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(8)).build();
     private final ObjectMapper mapper = new ObjectMapper();
@@ -50,89 +47,84 @@ public class LlmClient {
             @Value("${GEMINI_API_KEY:}") String geminiKey,
             @Value("${GEMINI_MODEL:gemini-2.5-flash}") String geminiModel,
             @Value("${GEMINI_FALLBACK_MODEL:gemini-2.0-flash}") String geminiFallback) {
-        groqKey = trim(groqKey);
-        geminiKey = trim(geminiKey);
-        if (!groqKey.isBlank()) {
-            this.provider = Provider.GROQ;
-            this.apiKey = groqKey;
-            this.model = blankTo(groqModel, "llama-3.3-70b-versatile");
-            this.fallbackModel = trim(groqFallback);
-        } else if (!geminiKey.isBlank()) {
-            this.provider = Provider.GEMINI;
-            this.apiKey = geminiKey;
-            this.model = blankTo(geminiModel, "gemini-2.5-flash");
-            this.fallbackModel = trim(geminiFallback);
-        } else {
-            this.provider = Provider.NONE;
-            this.apiKey = "";
-            this.model = "";
-            this.fallbackModel = "";
+        if (!trim(groqKey).isBlank()) {
+            providers.add(new ProviderConfig(Provider.GROQ, trim(groqKey),
+                models(blankTo(groqModel, "llama-3.3-70b-versatile"), groqFallback)));
         }
-        System.out.println("[LLM] provider=" + provider + (provider == Provider.NONE ? "" : " model=" + model));
+        if (!trim(geminiKey).isBlank()) {
+            providers.add(new ProviderConfig(Provider.GEMINI, trim(geminiKey),
+                models(blankTo(geminiModel, "gemini-2.5-flash"), geminiFallback)));
+        }
+        String summary = providers.isEmpty() ? "none (rule-based only)"
+            : providers.stream().map(p -> p.provider + "(" + p.models.get(0) + ")")
+                .collect(Collectors.joining(" -> "));
+        System.out.println("[LLM] providers: " + summary);
     }
 
     public boolean isEnabled() {
-        return provider != Provider.NONE;
+        return !providers.isEmpty();
     }
 
     /**
-     * Runs a completion and returns the model's text (expected to be the JSON our prompt asks for),
-     * retrying transient failures and trying the secondary model when the primary is unavailable.
+     * Runs a completion and returns the model's text (the JSON our prompt asks for), failing over
+     * across providers/models and retrying transient errors before giving up.
      */
     public String complete(String systemInstruction,
                            List<Map<String, Object>> contents,
                            Map<String, Object> generationConfig) throws Exception {
-        List<String> models = new ArrayList<>();
-        models.add(model);
-        if (!fallbackModel.isBlank() && !fallbackModel.equalsIgnoreCase(model)) {
-            models.add(fallbackModel);
-        }
         Exception last = null;
-        for (int mi = 0; mi < models.size(); mi++) {
-            String m = models.get(mi);
-            for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-                try {
-                    return callOnce(m, systemInstruction, contents, generationConfig);
-                } catch (LlmHttpException e) {
-                    last = e;
-                    if (mi == 0 && (e.status == 400 || e.status == 401 || e.status == 403)) {
-                        throw e; // bad request / auth on primary: retry & model-switch won't help
+        for (ProviderConfig pc : providers) {
+            modelLoop:
+            for (String m : pc.models) {
+                for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                    try {
+                        return callOnce(pc, m, systemInstruction, contents, generationConfig);
+                    } catch (LlmHttpException e) {
+                        last = e;
+                        if (e.status == 400 || e.status == 401 || e.status == 403) {
+                            // Bad key/request for this provider — retrying or its other model won't
+                            // help; move on to the next provider.
+                            System.err.println("[LLM] " + pc.provider + "/" + m + " " + e.getMessage()
+                                + " -> trying next provider");
+                            break modelLoop;
+                        }
+                        boolean retryable = e.status == 408 || e.status == 429 || e.status >= 500;
+                        if (retryable && attempt < MAX_ATTEMPTS) {
+                            System.err.println("[LLM] " + pc.provider + "/" + m + " attempt " + attempt
+                                + " -> " + e.getMessage() + " (retrying)");
+                            sleep(BASE_BACKOFF_MS * attempt);
+                            continue;
+                        }
+                        System.err.println("[LLM] " + pc.provider + "/" + m + " gave up: " + e.getMessage());
+                        break; // next model
+                    } catch (IOException | InterruptedException e) {
+                        last = e;
+                        if (attempt < MAX_ATTEMPTS) {
+                            System.err.println("[LLM] " + pc.provider + "/" + m + " attempt " + attempt
+                                + " connection error: " + e.getMessage() + " (retrying)");
+                            sleep(BASE_BACKOFF_MS * attempt);
+                            continue;
+                        }
+                        System.err.println("[LLM] " + pc.provider + "/" + m + " connection failed: " + e.getMessage());
+                        break; // next model
                     }
-                    boolean retryable = e.status == 408 || e.status == 429 || e.status >= 500;
-                    if (retryable && attempt < MAX_ATTEMPTS) {
-                        System.err.println("[LLM] " + m + " attempt " + attempt + " -> "
-                            + e.getMessage() + " (retrying)");
-                        sleep(BASE_BACKOFF_MS * attempt);
-                        continue;
-                    }
-                    System.err.println("[LLM] " + m + " gave up: " + e.getMessage());
-                    break;
-                } catch (IOException | InterruptedException e) {
-                    last = e;
-                    if (attempt < MAX_ATTEMPTS) {
-                        System.err.println("[LLM] " + m + " attempt " + attempt
-                            + " connection error: " + e.getMessage() + " (retrying)");
-                        sleep(BASE_BACKOFF_MS * attempt);
-                        continue;
-                    }
-                    System.err.println("[LLM] " + m + " connection failed: " + e.getMessage());
-                    break;
                 }
             }
+            // this provider exhausted -> try the next one
         }
         throw (last != null ? last : new RuntimeException("LLM call failed"));
     }
 
-    private String callOnce(String model, String systemInstruction,
+    private String callOnce(ProviderConfig pc, String model, String systemInstruction,
                             List<Map<String, Object>> contents, Map<String, Object> genConfig)
             throws LlmHttpException, IOException, InterruptedException {
-        return provider == Provider.GROQ
-            ? callGroq(model, systemInstruction, contents, genConfig)
-            : callGemini(model, systemInstruction, contents, genConfig);
+        return pc.provider == Provider.GROQ
+            ? callGroq(pc.apiKey, model, systemInstruction, contents, genConfig)
+            : callGemini(pc.apiKey, model, systemInstruction, contents, genConfig);
     }
 
     // --- Groq (OpenAI-compatible) ---
-    private String callGroq(String model, String systemInstruction,
+    private String callGroq(String apiKey, String model, String systemInstruction,
                             List<Map<String, Object>> contents, Map<String, Object> genConfig)
             throws LlmHttpException, IOException, InterruptedException {
         List<Map<String, String>> messages = new ArrayList<>();
@@ -168,7 +160,7 @@ public class LlmClient {
     }
 
     // --- Gemini ---
-    private String callGemini(String model, String systemInstruction,
+    private String callGemini(String apiKey, String model, String systemInstruction,
                               List<Map<String, Object>> contents, Map<String, Object> genConfig)
             throws LlmHttpException, IOException, InterruptedException {
         Map<String, Object> body = Map.of(
@@ -199,6 +191,16 @@ public class LlmClient {
         return text;
     }
 
+    private static List<String> models(String primary, String fallback) {
+        List<String> list = new ArrayList<>();
+        list.add(primary);
+        fallback = trim(fallback);
+        if (!fallback.isBlank() && !fallback.equalsIgnoreCase(primary)) {
+            list.add(fallback);
+        }
+        return list;
+    }
+
     @SuppressWarnings("unchecked")
     private static String firstPartText(Map<String, Object> content) {
         Object parts = content.get("parts");
@@ -222,6 +224,18 @@ public class LlmClient {
     private static String truncate(String s) {
         if (s == null) return "";
         return s.length() > 300 ? s.substring(0, 300) + "…" : s;
+    }
+
+    /** A configured provider and the models to try for it (primary, then optional fallback). */
+    private static class ProviderConfig {
+        final Provider provider;
+        final String apiKey;
+        final List<String> models;
+        ProviderConfig(Provider provider, String apiKey, List<String> models) {
+            this.provider = provider;
+            this.apiKey = apiKey;
+            this.models = models;
+        }
     }
 
     /** Non-2xx (or empty) LLM response; carries the HTTP status for retry decisions. */
