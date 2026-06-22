@@ -40,7 +40,8 @@ public class ChatService {
           rent, deposit, facilities, rules, documents, safety, notice period, etc.).
         - If the message is off-topic (sports, movies, coding, politics, weather, recipes, general
           knowledge, etc.), politely refuse in ONE short sentence and offer PG help instead, in the
-          user's language. Templates:
+          user's language. (Greetings, thanks, and requests to change language are NOT off-topic -
+          handle those normally, never refuse them.) Templates:
           - English: "I can only help with PG accommodation questions - ask me about rent, facilities,
             rules, or finding PGs near your college!"
           - Hindi: "मैं केवल PG आवास से जुड़े सवालों में मदद कर सकता हूँ - किराया, सुविधाएं, नियम या कॉलेज के पास
@@ -49,9 +50,15 @@ public class ChatService {
             PG খোঁজার বিষয়ে জিজ্ঞেস করুন!"
 
         LANGUAGE (CRITICAL):
-        - Detect the user's language - English, Hindi (incl. romanised), or Bengali (incl. romanised,
-          e.g. "6000 er modhye girls pg wifi soho") - and ALWAYS write "reply" in that SAME language,
-          in simple everyday words.
+        - Default to ENGLISH. Reply in Hindi or Bengali ONLY when the user's LATEST message is clearly
+          written in that language - Devanagari/Bengali script, or clearly romanised Hindi/Bengali
+          words (e.g. "6000 er modhye girls pg wifi soho"). Treat short, ambiguous messages and
+          greetings such as "hi", "hello", "ok", "thanks" as English.
+        - Reply in the language of the LATEST user message; do NOT be biased by earlier turns.
+        - If the user asks to switch language (e.g. "english", "reply in english", "hindi me bolo",
+          "bangla te bolo"), switch to that language and keep helping - this is a normal request, not
+          an off-topic question.
+        - Never translate or transliterate your own name: always write it exactly as "Quanta".
 
         PG KNOWLEDGE (use to answer FAQs):
         - PG = Paying Guest: a rented room (single/double/triple-sharing) in a house/flat, monthly rent,
@@ -70,7 +77,8 @@ public class ChatService {
         - If the user wants PG suggestions (mentions budget, gender, amenities, a college, asks to
           find/suggest/show PGs, or a refining follow-up like "show more" / "cheaper" / "with AC"), set
           action="recommend" and fill the filters you can infer: budget (number), gender
-          (boys/girls/coed), amenities (from wifi, food, ac, laundry, parking, bath), college (name),
+          (boys/girls/coed), amenities (from wifi, food, ac, laundry, parking, bath), college (ANY
+          place the user names - a college, locality, area or city, e.g. "Asansol"),
           minRating (1-5 if they want highly/top rated), limit. Put a short friendly sentence (in the
           user's language) in "reply". Do NOT invent specific PGs - the system fills them from the real
           database.
@@ -78,15 +86,31 @@ public class ChatService {
           AC?", "tell me about the first one"), set action="answer" and answer from that list in "reply".
         - Otherwise set action="answer" with your complete, helpful answer in "reply".
         - Be concise, warm and friendly.
+
+        OUTPUT FORMAT (STRICT): return ONLY a single JSON object with EXACTLY these keys, using null
+        when a field does not apply:
+          {"action": "recommend" | "answer",
+           "reply": "<your message, in the user's language>",
+           "budget": <number in rupees, or null>,
+           "gender": "boys" | "girls" | "coed" | null,
+           "amenities": [<any of "wifi","food","ac","laundry","parking","bath">],
+           "college": "<college, locality, area or city the user names>" | null,
+           "minRating": <number 1-5, or null>,
+           "limit": <number, or null>}
+        Always express budget as a plain number of rupees - convert "6k", "6 k", "₹6,000" -> 6000.
+        Example - for "give me pgs near asansol engineering college under 6k" you must return:
+          {"action":"recommend","reply":"Sure - here are PGs near Asansol Engineering College under ₹6000.",
+           "budget":6000,"gender":null,"amenities":[],"college":"Asansol Engineering College",
+           "minRating":null,"limit":3}
         """;
 
     private final RecommendationService recommendationService;
-    private final GeminiClient geminiClient;
+    private final LlmClient llm;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public ChatService(RecommendationService recommendationService, GeminiClient geminiClient) {
+    public ChatService(RecommendationService recommendationService, LlmClient llm) {
         this.recommendationService = recommendationService;
-        this.geminiClient = geminiClient;
+        this.llm = llm;
     }
 
     /** Single-turn entry point (no history) — kept for callers/tests. */
@@ -103,7 +127,7 @@ public class ChatService {
         if (message == null || message.isBlank()) {
             return ChatResponse.text("Tell me your budget and what you're looking for, or ask me a question about PGs.");
         }
-        if (!geminiClient.isEnabled()) {
+        if (!llm.isEnabled()) {
             return ruleBasedReply(message);
         }
         try {
@@ -147,12 +171,12 @@ public class ChatService {
             "responseSchema", responseSchema()
         );
 
-        JsonNode node = mapper.readTree(geminiClient.complete(SYSTEM, contents, genConfig));
+        JsonNode node = mapper.readTree(llm.complete(SYSTEM, contents, genConfig));
         String action = node.path("action").asText("answer");
         String replyText = node.path("reply").asText("");
 
         if ("recommend".equalsIgnoreCase(action)) {
-            Integer budget = node.hasNonNull("budget") ? node.get("budget").asInt() : null;
+            Integer budget = parseBudgetNode(node.get("budget"));
             String gender = node.hasNonNull("gender") ? node.get("gender").asText() : null;
             String college = node.hasNonNull("college") ? node.get("college").asText() : null;
             Double minRating = node.hasNonNull("minRating") ? node.get("minRating").asDouble() : null;
@@ -196,7 +220,29 @@ public class ChatService {
         );
     }
 
-    // --- Rule-based fallback (used when Gemini is off or fails) ---
+    /** Reads the LLM's budget field, tolerating a number (6000) or a string ("6k", "₹6,000"). */
+    private Integer parseBudgetNode(JsonNode n) {
+        if (n == null || n.isNull()) return null;
+        if (n.isNumber()) {
+            int v = n.asInt();
+            return v > 0 ? v : null;
+        }
+        String s = n.asText("").toLowerCase().trim();
+        if (s.isBlank()) return null;
+        boolean k = s.contains("k");
+        String digits = s.replaceAll("[^0-9.]", "");
+        if (digits.isBlank()) return null;
+        try {
+            double d = Double.parseDouble(digits);
+            if (k && d < 1000) d *= 1000;   // "6k" -> 6000
+            int v = (int) Math.round(d);
+            return v > 0 ? v : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    // --- Rule-based fallback (used when the LLM is off or fails) ---
 
     private ChatResponse ruleBasedReply(String rawMessage) {
         String msg = rawMessage == null ? "" : rawMessage.trim().toLowerCase();

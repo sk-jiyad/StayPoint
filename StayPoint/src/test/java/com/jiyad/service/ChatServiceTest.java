@@ -22,7 +22,7 @@ class ChatServiceTest {
     private RecommendationService recommendationService;
 
     @Mock
-    private GeminiClient geminiClient;
+    private LlmClient llm;
 
     @InjectMocks
     private ChatService chatService;
@@ -75,9 +75,9 @@ class ChatServiceTest {
     }
 
     @Test
-    void fallsBackToRuleBasedWhenGeminiErrors() throws Exception {
-        when(geminiClient.isEnabled()).thenReturn(true);
-        when(geminiClient.complete(any(), anyList(), anyMap())).thenThrow(new RuntimeException("boom"));
+    void fallsBackToRuleBasedWhenLlmErrors() throws Exception {
+        when(llm.isEnabled()).thenReturn(true);
+        when(llm.complete(any(), anyList(), anyMap())).thenThrow(new RuntimeException("boom"));
 
         ChatResponse r = chatService.reply("what is pg");
 

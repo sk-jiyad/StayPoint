@@ -37,12 +37,25 @@ public class RecommendationService {
     public List<PG> recommend(Integer budget, String gender, List<String> amenities,
                               String college, Double minRating, int limit) {
         List<String> wanted = amenities == null ? List.of() : amenities;
-        return pgRepository.findAll().stream()
+        List<PG> candidates = pgRepository.findAll().stream()
             .filter(pg -> !Boolean.TRUE.equals(pg.getHidden()) && !Boolean.TRUE.equals(pg.getFrozen()))
             .filter(pg -> withinBudget(pg, budget))
             .filter(pg -> genderMatches(pg, gender))
             .filter(pg -> hasAllAmenities(pg, wanted))
             .filter(pg -> ratedEnough(pg, minRating))
+            .toList();
+
+        // When the user names a college/locality, treat it as a location FILTER (same-city allowed):
+        // keep only listings whose college/address/landmark/city matches it, so a PG in a different
+        // city is never returned. If nothing matches at all, the result is empty so the caller can
+        // honestly report "no PGs near <location>" rather than padding with unrelated listings.
+        if (college != null && !college.isBlank()) {
+            candidates = candidates.stream()
+                .filter(pg -> collegeMatch(pg, college) >= 1.0)
+                .toList();
+        }
+
+        return candidates.stream()
             .sorted(Comparator.comparingDouble((PG pg) -> score(pg, budget, wanted, college)).reversed())
             .limit(Math.max(1, limit))
             .toList();
