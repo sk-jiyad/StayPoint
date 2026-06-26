@@ -14,8 +14,8 @@ node_modules/
 *.jar
 *.log
 
-# Ignore backup files
-*.bak
+# Ignore backup files (*.bak, *.bak2, *.bak3, …)
+*.bak*
 *.tmp
 
 # Maven
@@ -39,6 +39,11 @@ Thumbs.db
 
 # gitingest / repo dumps
 shreyas-2321-sp-8a5edab282632443.txt
+samratrick-pg_chatbot-8a5edab282632443.txt
 
-Final year pd2.pdf
-Project Proposal.docx
+# Project report documents & their authoring scratch (local only, not app code).
+# This repo tracks code; Word/PDF reports and the docx-editing scripts live outside it.
+*.docx
+*.pdf
+testbed*
+docs/
